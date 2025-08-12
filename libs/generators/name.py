@@ -65,7 +65,7 @@ class RikishiNameGenerator:
         return "".join([r["hepburn"] for r in res])
 
     def __get_len(self) -> int:
-        return random.choices(  # noqa: S311
+        return random.choices(
             population=range(1, len(self.len_prob) + 1), weights=self.len_prob
         )[0]
 
@@ -80,7 +80,7 @@ class RikishiNameGenerator:
 
     def __check_valid(self, name: str, name_jp: str) -> bool:
         length = len(name)
-        max_len = random.choices(  # noqa: S311
+        max_len = random.choices(
             population=[LOW_MAX_NAME_LEN, MED_MAX_NAME_LEN, MAX_MAX_NAME_LEN],
             weights=[0.5, 0.4, 0.1],
         )[0]
@@ -92,7 +92,7 @@ class RikishiNameGenerator:
             name_jp = ""
             for i in range(self.__get_len()):
                 population, weights = zip(*self.pos_table[i], strict=False)
-                c = random.choices(population, weights)[0]  # noqa: S311
+                c = random.choices(population, weights)[0]
                 name_jp += c
             name = self.__transliterate(name_jp)
             name = self.__fix_phonemes(name)
