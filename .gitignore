@@ -1,6 +1,15 @@
+# Python virtual environments
 .venv/
+
+# Python cache and compiled files
 __pycache__/
 *.pyc
+.mypy_cache/
 .ruff_cache/
-db.sqlite3
+
+# Environment and database files
 .env
+db.sqlite3
+
+# Misc
+.DS_Store
