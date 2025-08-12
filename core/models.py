@@ -8,12 +8,19 @@ from core.enums.jp_prefecture_enum import JPPrefecture
 
 
 class Shusshin(models.Model):
+    """Origin information for a sumo wrestler."""
+
     country_code = models.CharField(max_length=2, choices=Country.choices)
     jp_prefecture = models.CharField(
-        max_length=5, choices=JPPrefecture.choices, blank=True, default=""
+        max_length=5,
+        choices=JPPrefecture.choices,
+        blank=True,
+        default="",
     )
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["country_code", "jp_prefecture"]
         verbose_name = "Shusshin"
         verbose_name_plural = "Shusshin"
@@ -26,3 +33,9 @@ class Shusshin(models.Model):
                 ),
             ),
         ]
+
+    def __str__(self) -> str:  # pragma: no cover - simple string representation
+        """Return a human-readable representation of the origin."""
+        if self.jp_prefecture:
+            return f"{self.country_code}-{self.jp_prefecture}"
+        return self.country_code

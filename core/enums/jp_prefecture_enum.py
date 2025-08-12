@@ -1,7 +1,11 @@
+"""Enumeration of Japanese prefecture codes."""
+
 from django.db.models import TextChoices
 
 
 class JPPrefecture(TextChoices):
+    """ISO 3166-2 codes for Japanese prefectures."""
+
     JP_01 = "JP-01", "Hokkaido"
     JP_02 = "JP-02", "Aomori"
     JP_03 = "JP-03", "Iwate"

@@ -1,7 +1,11 @@
+"""Country code enumeration used by the core app."""
+
 from django.db.models import TextChoices
 
 
 class Country(TextChoices):
+    """ISO 3166-1 alpha-2 country codes."""
+
     AW = "AW", "Aruba"
     AF = "AF", "Afghanistan"
     AO = "AO", "Angola"
