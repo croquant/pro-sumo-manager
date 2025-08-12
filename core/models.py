@@ -34,8 +34,8 @@ class Shusshin(models.Model):
             ),
         ]
 
-    def __str__(self) -> str:  # pragma: no cover - simple string representation
+    def __str__(self) -> str:
         """Return a human-readable representation of the origin."""
-        if self.jp_prefecture:
-            return f"{self.country_code}-{self.jp_prefecture}"
-        return self.country_code
+        if self.country_code == Country.JP:
+            return JPPrefecture(self.jp_prefecture).label
+        return Country(self.country_code).label
