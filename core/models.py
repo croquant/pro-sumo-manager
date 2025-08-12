@@ -3,8 +3,7 @@
 from django.db import models
 from django.db.models import Q
 
-from core.enums.country_enum import Country
-from core.enums.jp_prefecture_enum import JPPrefecture
+from core.enums import Country, JPPrefecture
 
 
 class Shusshin(models.Model):

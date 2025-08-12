@@ -15,7 +15,7 @@ class ShusshinModelTests(TestCase):
         """Should return the prefecture label when country is Japan."""
         shusshin = Shusshin.objects.create(
             country_code=Country.JP,
-            jp_prefecture=JPPrefecture.JP_13,
+            jp_prefecture=JPPrefecture.TOKYO,
         )
         self.assertEqual(str(shusshin), "Tokyo")
 
@@ -31,7 +31,7 @@ class ShusshinModelTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             Shusshin.objects.create(
                 country_code=Country.US,
-                jp_prefecture=JPPrefecture.JP_13,
+                jp_prefecture=JPPrefecture.TOKYO,
             )
 
     def test_fail_without_jp_prefecture_for_japan(self) -> None:
