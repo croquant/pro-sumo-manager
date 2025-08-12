@@ -1,0 +1,28 @@
+{
+  "files.associations": {
+    "**/templates/**/*.html": "django-html",
+    "**/templates/**/*.djhtml": "django-html",
+    "**/templates/**/*.txt": "django-txt"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "html.format.enable": false,
+  "[django-html]": {
+    "editor.defaultFormatter": "monosans.djlint",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "editor.formatOnSave": true,
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.formatting.provider": "black",
+  "djangoCotton.templatePaths": ["templates/cotton"],
+  "python.testing.unittestEnabled": true,
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.testing.unittestArgs": [
+    "--verbosity",
+    "2" // optional; Django forwards this to manage.py test
+  ],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true
+}
