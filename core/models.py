@@ -31,6 +31,16 @@ class Shusshin(models.Model):
                     | (~Q(country_code=Country.JP) & Q(jp_prefecture=""))
                 ),
             ),
+            models.UniqueConstraint(
+                fields=["country_code"],
+                condition=~Q(country_code=Country.JP),
+                name="unique_shusshin_country_except_japan",
+            ),
+            models.UniqueConstraint(
+                fields=["jp_prefecture"],
+                condition=Q(country_code=Country.JP),
+                name="unique_shusshin_jp_prefecture",
+            ),
         ]
 
     def __str__(self) -> str:
