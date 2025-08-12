@@ -40,3 +40,25 @@ class ShusshinModelTests(TestCase):
             Shusshin.objects.create(
                 country_code=Country.JP,
             )
+
+    def test_fail_duplicate_country_for_non_japan(self) -> None:
+        """Should fail if two non-Japanese Shusshin share a country."""
+        Shusshin.objects.create(
+            country_code=Country.US,
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Shusshin.objects.create(
+                country_code=Country.US,
+            )
+
+    def test_fail_duplicate_prefecture_for_japan(self) -> None:
+        """Should fail if two Japanese Shusshin share a prefecture."""
+        Shusshin.objects.create(
+            country_code=Country.JP,
+            jp_prefecture=JPPrefecture.TOKYO,
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Shusshin.objects.create(
+                country_code=Country.JP,
+                jp_prefecture=JPPrefecture.TOKYO,
+            )
