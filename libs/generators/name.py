@@ -54,8 +54,15 @@ PHONEME_REPLACE = [
 class RikishiNameGenerator:
     """Generator for realistic-sounding sumo wrestler names."""
 
-    def __init__(self) -> None:
-        """Initialize the generator with probability tables and converters."""
+    def __init__(self, seed: int | None = None) -> None:
+        """
+        Initialize the generator.
+
+        Args:
+            seed: Optional seed for deterministic name generation.
+
+        """
+        self.random = random.Random(seed)
         self.len_prob: Sequence[float] = LEN_PROBABILITIES
         self.pos_table: PosTable = get_pos_table()
         self.kks = pykakasi.kakasi()
@@ -65,7 +72,7 @@ class RikishiNameGenerator:
         return "".join([r["hepburn"] for r in res])
 
     def __get_len(self) -> int:
-        return random.choices(
+        return self.random.choices(
             population=range(1, len(self.len_prob) + 1), weights=self.len_prob
         )[0]
 
@@ -80,7 +87,7 @@ class RikishiNameGenerator:
 
     def __check_valid(self, name: str, name_jp: str) -> bool:
         length = len(name)
-        max_len = random.choices(
+        max_len = self.random.choices(
             population=[LOW_MAX_NAME_LEN, MED_MAX_NAME_LEN, MAX_MAX_NAME_LEN],
             weights=[0.5, 0.4, 0.1],
         )[0]
@@ -92,7 +99,7 @@ class RikishiNameGenerator:
             name_jp = ""
             for i in range(self.__get_len()):
                 population, weights = zip(*self.pos_table[i], strict=False)
-                c = random.choices(population, weights)[0]
+                c = self.random.choices(population, weights)[0]
                 name_jp += c
             name = self.__transliterate(name_jp)
             name = self.__fix_phonemes(name)
