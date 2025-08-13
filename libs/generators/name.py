@@ -27,6 +27,7 @@ MIN_NAME_LEN = 2
 LOW_MAX_NAME_LEN = 14
 MED_MAX_NAME_LEN = 19
 MAX_MAX_NAME_LEN = 24
+MAX_ATTEMPTS = 100
 
 LEN_PROBABILITIES = [
     0.4066852367688022,
@@ -93,8 +94,15 @@ class RikishiNameGenerator:
         return MIN_NAME_LEN <= length <= max_len and self.__check_no(name_jp)
 
     def get(self) -> tuple[str, str]:
-        """Return a tuple of (romanized name, Japanese name)."""
-        while True:
+        """
+        Return a tuple of (romanized name, Japanese name).
+
+        Raises:
+            RuntimeError: If a valid name cannot be generated within
+                ``MAX_ATTEMPTS``.
+
+        """
+        for _ in range(MAX_ATTEMPTS):
             name_jp = ""
             for i in range(self.__get_len()):
                 population, weights = zip(*self.pos_table[i], strict=False)
@@ -104,3 +112,6 @@ class RikishiNameGenerator:
             name = self.__fix_phonemes(name)
             if self.__check_valid(name, name_jp):
                 return (name, name_jp)
+        raise RuntimeError(
+            f"Failed to generate a valid name after {MAX_ATTEMPTS} attempts"
+        )
