@@ -15,6 +15,19 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  - repo: local
+    hooks:
+      - id: django-system-check
+        name: Django system check
+        entry: bash -c 'python manage.py check --fail-level=ERROR'
+        language: system
+        types: [python]
+      - id: django-migrations-check
+        name: Django missing migrations check
+        entry: bash -c 'python manage.py makemigrations --check --dry-run'
+        language: system
+        types: [python]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.17.1
     hooks:
@@ -23,3 +36,12 @@ repos:
           - django-stubs
           - django-stubs-ext
           - python-dotenv
+
+  - repo: local
+    hooks:
+      - id: tests_sh
+        name: Run test.sh
+        entry: bash -c './test.sh'
+        language: system
+        pass_filenames: false
+        always_run: true

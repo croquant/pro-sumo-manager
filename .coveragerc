@@ -1,0 +1,24 @@
+[run]
+branch = True
+data_file = coverage/.coverage
+source =
+    core
+    libs
+
+[report]
+omit =
+    */migrations/*
+    */tests/*
+    config/settings.py
+    config/urls.py
+    config/wsgi.py
+    config/asgi.py
+    manage.py
+show_missing = true
+skip_covered = true
+skip_empty = true
+precision = 2
+
+[json]
+output = coverage/coverage.json
+pretty_print = true
