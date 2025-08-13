@@ -1,5 +1,7 @@
 """Tests for the Rikishi name generator."""
 
+from unittest.mock import patch
+
 from django.test import SimpleTestCase
 
 from libs.generators.name import MIN_NAME_LEN, RikishiNameGenerator
@@ -31,3 +33,16 @@ class RikishiNameGeneratorTests(SimpleTestCase):
             name, name_jp = gen.get()
             self.assertGreaterEqual(len(name), MIN_NAME_LEN)
             self.assertGreaterEqual(len(name_jp), MIN_NAME_LEN)
+
+    def test_get_raises_after_max_attempts(self) -> None:
+        """An error is raised when a valid name can't be generated."""
+        gen = RikishiNameGenerator(seed=1)
+        with (
+            patch.object(
+                gen, "_RikishiNameGenerator__check_valid", return_value=False
+            ),
+            self.assertRaisesRegex(
+                RuntimeError, "Failed to generate a valid name"
+            ),
+        ):
+            gen.get()
