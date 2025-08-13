@@ -29,11 +29,10 @@ MED_MAX_NAME_LEN = 19
 MAX_MAX_NAME_LEN = 24
 
 LEN_PROBABILITIES = [
-    0.025780189959294438,
-    0.39620081411126185,
-    0.4708276797829037,
-    0.1044776119402985,
-    0.0027137042062415195,
+    0.4066852367688022,
+    0.48328690807799446,
+    0.10724233983286907,
+    0.0027855153203342614,
 ]
 
 PHONEME_REPLACE = [
@@ -72,7 +71,8 @@ class RikishiNameGenerator:
 
     def __get_len(self) -> int:
         return self.random.choices(
-            population=range(1, len(self.len_prob) + 1), weights=self.len_prob
+            population=range(MIN_NAME_LEN, MIN_NAME_LEN + len(self.len_prob)),
+            weights=self.len_prob,
         )[0]
 
     def __fix_phonemes(self, name: str) -> str:
