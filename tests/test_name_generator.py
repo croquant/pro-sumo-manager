@@ -2,7 +2,7 @@
 
 from django.test import SimpleTestCase
 
-from libs.generators.name import RikishiNameGenerator
+from libs.generators.name import MIN_NAME_LEN, RikishiNameGenerator
 
 
 class RikishiNameGeneratorTests(SimpleTestCase):
@@ -23,3 +23,11 @@ class RikishiNameGeneratorTests(SimpleTestCase):
         self.assertEqual(fix("aoo"), "ao")
         self.assertEqual(fix("sou"), "so")
         self.assertEqual(fix("muu"), "mu")
+
+    def test_generated_name_min_length(self) -> None:
+        """Generated names meet the minimum length requirement."""
+        gen = RikishiNameGenerator(seed=123)
+        for _ in range(100):
+            name, name_jp = gen.get()
+            self.assertGreaterEqual(len(name), MIN_NAME_LEN)
+            self.assertGreaterEqual(len(name_jp), MIN_NAME_LEN)
