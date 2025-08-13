@@ -37,17 +37,16 @@ LEN_PROBABILITIES = [
 ]
 
 PHONEME_REPLACE = [
-    ("samurai", "ji"),
-    ("ryuu", "ryu"),
-    ("ooo", "oo"),
-    ("uoo", "uo"),
-    ("aoo", "ao"),
-    ("eoo", "eo"),
-    ("aoo", "ao"),
-    ("ioo", "io"),
-    (r"(?<![nhr])ou", "o"),
-    (r"ou$", "o"),
-    (r"uu$", "u"),
+    (re.compile("samurai"), "ji"),
+    (re.compile("ryuu"), "ryu"),
+    (re.compile("ooo"), "oo"),
+    (re.compile("uoo"), "uo"),
+    (re.compile("aoo"), "ao"),
+    (re.compile("eoo"), "eo"),
+    (re.compile("ioo"), "io"),
+    (re.compile(r"(?<![nhr])ou"), "o"),
+    (re.compile(r"ou$"), "o"),
+    (re.compile(r"uu$"), "u"),
 ]
 
 
@@ -77,8 +76,8 @@ class RikishiNameGenerator:
         )[0]
 
     def __fix_phonemes(self, name: str) -> str:
-        for phoneme in PHONEME_REPLACE:
-            name = re.sub(phoneme[0], phoneme[1], name)
+        for pattern, replacement in PHONEME_REPLACE:
+            name = pattern.sub(replacement, name)
         return name
 
     def __check_no(self, name_jp: str) -> bool:
