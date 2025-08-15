@@ -6,6 +6,7 @@ import json
 import os
 import random
 import re
+from collections import Counter
 from collections.abc import Sequence
 from typing import Any
 
@@ -16,6 +17,45 @@ DIRNAME = os.path.dirname(__file__)
 PosEntry = tuple[str, float]
 StartTable = list[PosEntry]
 BigramTable = dict[str, StartTable]
+
+
+def generate_name_char_bigram_table(
+    corpus_path: str | None = None, dest_path: str | None = None
+) -> dict[str, Any]:
+    """Generate character bigram tables from a corpus of shikona."""
+    if corpus_path is None:
+        corpus_path = os.path.join(DIRNAME, "data", "shikona_corpus.txt")
+    if dest_path is None:
+        dest_path = os.path.join(DIRNAME, "data", "name_char_bigram_table.json")
+
+    with open(corpus_path, encoding="utf-8") as f:
+        names = [line.strip() for line in f if line.strip()]
+
+    start_counts: Counter[str] = Counter()
+    bigram_counts: dict[str, Counter[str]] = {}
+    for name in names:
+        start_counts[name[0]] += 1
+        for prev, nxt in zip(name, name[1:]):
+            bigram_counts.setdefault(prev, Counter())[nxt] += 1
+
+    start_total = sum(start_counts.values())
+    start_table: StartTable = sorted(
+        ((c, count / start_total) for c, count in start_counts.items()),
+        key=lambda x: x[0],
+    )
+
+    bigram_table: BigramTable = {}
+    for prev, counter in bigram_counts.items():
+        total = sum(counter.values())
+        bigram_table[prev] = sorted(
+            ((c, cnt / total) for c, cnt in counter.items()), key=lambda x: x[0]
+        )
+    bigram_table = dict(sorted(bigram_table.items()))
+
+    data = {"start": start_table, "bigrams": bigram_table}
+    with open(dest_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return data
 
 
 def get_bigram_tables() -> tuple[StartTable, BigramTable]:
