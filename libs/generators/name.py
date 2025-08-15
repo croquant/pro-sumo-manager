@@ -113,6 +113,16 @@ PHONEME_REPLACE = [
     (re.compile(r"(?<![nhr])ou"), "o"),
     (re.compile(r"ou$"), "o"),
     (re.compile(r"uu$"), "u"),
+    # Hepburn adjustments for consistency across romanization
+    (re.compile(r"si"), "shi"),  # Convert Kunrei-shiki "si" to Hepburn "shi"
+    (re.compile(r"ti"), "chi"),  # Convert "ti" to "chi"
+    (re.compile(r"tu"), "tsu"),  # Convert "tu" to "tsu"
+    (re.compile(r"zi"), "ji"),  # Convert "zi" to "ji"
+    (re.compile(r"hu"), "fu"),  # Convert "hu" to "fu"
+    # Normalize long vowels by collapsing duplicates
+    (re.compile(r"aa"), "a"),
+    (re.compile(r"ii"), "i"),
+    (re.compile(r"ee"), "e"),
 ]
 
 
