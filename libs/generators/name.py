@@ -7,20 +7,30 @@ import os
 import random
 import re
 from collections.abc import Sequence
+from typing import Any
 
 import pykakasi
 
 DIRNAME = os.path.dirname(__file__)
 
 PosEntry = tuple[str, float]
-PosTable = list[list[PosEntry]]
+StartTable = list[PosEntry]
+BigramTable = dict[str, StartTable]
 
 
-def get_pos_table() -> PosTable:
-    """Load the character position table used for name generation."""
-    with open(os.path.join(DIRNAME, "data", "name_char_pos_table.json")) as f:
-        raw_data: list[list[list[float | str]]] = json.load(f)
-    return [[(str(c), float(p)) for c, p in pos] for pos in raw_data]
+def get_bigram_tables() -> tuple[StartTable, BigramTable]:
+    """Load the bigram tables used for name generation."""
+    with open(
+        os.path.join(DIRNAME, "data", "name_char_bigram_table.json"),
+        encoding="utf-8",
+    ) as f:
+        raw_data: dict[str, Any] = json.load(f)
+    start = [(str(c), float(p)) for c, p in raw_data["start"]]
+    bigrams: BigramTable = {
+        str(prev): [(str(c), float(p)) for c, p in nxt]
+        for prev, nxt in raw_data["bigrams"].items()
+    }
+    return start, bigrams
 
 
 MIN_NAME_LEN = 2
@@ -63,7 +73,7 @@ class RikishiNameGenerator:
         """
         self.random = random.Random(seed)
         self.len_prob: Sequence[float] = LEN_PROBABILITIES
-        self.pos_table: PosTable = get_pos_table()
+        self.start_table, self.bigram_table = get_bigram_tables()
         self.kks = pykakasi.kakasi()
 
     def __transliterate(self, name_jp: str) -> str:
@@ -91,7 +101,13 @@ class RikishiNameGenerator:
             population=[LOW_MAX_NAME_LEN, MED_MAX_NAME_LEN, MAX_MAX_NAME_LEN],
             weights=[0.5, 0.4, 0.1],
         )[0]
-        return MIN_NAME_LEN <= length <= max_len and self.__check_no(name_jp)
+        lower = name.lower()
+        return (
+            MIN_NAME_LEN <= length <= max_len
+            and self.__check_no(name_jp)
+            and not lower.startswith("no")
+            and not lower.endswith("no")
+        )
 
     def get(self) -> tuple[str, str]:
         """
@@ -104,8 +120,16 @@ class RikishiNameGenerator:
         """
         for _ in range(MAX_ATTEMPTS):
             name_jp = ""
-            for i in range(self.__get_len()):
-                population, weights = zip(*self.pos_table[i], strict=False)
+            length = self.__get_len()
+            for i in range(length):
+                if i == 0:
+                    population, weights = zip(*self.start_table, strict=False)
+                else:
+                    prev = name_jp[-1]
+                    population, weights = zip(
+                        *self.bigram_table.get(prev, self.start_table),
+                        strict=False,
+                    )
                 c = self.random.choices(population, weights)[0]
                 name_jp += c
             name = self.__transliterate(name_jp)
