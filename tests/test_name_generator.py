@@ -15,10 +15,12 @@ class RikishiNameGeneratorTests(SimpleTestCase):
     """Tests for deterministic name generation and phoneme fixes."""
 
     def test_seed_produces_deterministic_results(self) -> None:
-        """Two generators seeded the same produce identical names."""
+        """Two generators seeded the same produce identical name sequences."""
         gen1 = RikishiNameGenerator(seed=42)
         gen2 = RikishiNameGenerator(seed=42)
-        self.assertEqual(gen1.get(), gen2.get())
+        seq1 = [gen1.get() for _ in range(5)]
+        seq2 = [gen2.get() for _ in range(5)]
+        self.assertEqual(seq1, seq2)
 
     def test_fix_phonemes_replacements(self) -> None:
         """Specific phoneme patterns are replaced correctly."""
@@ -62,6 +64,13 @@ class RikishiNameGeneratorTests(SimpleTestCase):
             lower = name.lower()
             self.assertFalse(lower.startswith("no"))
             self.assertFalse(lower.endswith("no"))
+
+    def test_generated_name_contains_kanji(self) -> None:
+        """Japanese names include at least one kanji character."""
+        gen = RikishiNameGenerator(seed=7)
+        for _ in range(50):
+            _, name_jp = gen.get()
+            self.assertTrue(any("\u4e00" <= c <= "\u9fff" for c in name_jp))
 
     def test_get_raises_after_max_attempts(self) -> None:
         """An error is raised when a valid name can't be generated."""
