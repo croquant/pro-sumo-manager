@@ -8,15 +8,26 @@ import random
 import re
 from collections import Counter
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, TypedDict
 
 import pykakasi
 
 DIRNAME = os.path.dirname(__file__)
 
+
 PosEntry = tuple[str, float]
 StartTable = list[PosEntry]
-BigramTable = dict[str, StartTable]
+
+
+class BigramEntry(TypedDict):
+    """Bigram probabilities for a single character."""
+
+    end: float
+    chars: StartTable
+
+
+BigramTable = dict[str, BigramEntry]
+TransitionTable = dict[str, StartTable]
 
 
 def generate_name_char_bigram_table(
@@ -33,10 +44,12 @@ def generate_name_char_bigram_table(
 
     start_counts: Counter[str] = Counter()
     bigram_counts: dict[str, Counter[str]] = {}
+    end_counts: Counter[str] = Counter()
     for name in names:
         start_counts[name[0]] += 1
         for prev, nxt in zip(name, name[1:]):
             bigram_counts.setdefault(prev, Counter())[nxt] += 1
+        end_counts[name[-1]] += 1
 
     start_total = sum(start_counts.values())
     start_table: StartTable = sorted(
@@ -45,12 +58,17 @@ def generate_name_char_bigram_table(
     )
 
     bigram_table: BigramTable = {}
-    for prev, counter in bigram_counts.items():
-        total = sum(counter.values())
-        bigram_table[prev] = sorted(
-            ((c, cnt / total) for c, cnt in counter.items()), key=lambda x: x[0]
-        )
-    bigram_table = dict(sorted(bigram_table.items()))
+    for prev in sorted(set(bigram_counts) | set(end_counts)):
+        counter = bigram_counts.get(prev, Counter())
+        end = end_counts.get(prev, 0)
+        total = end + sum(counter.values())
+        bigram_table[prev] = {
+            "chars": sorted(
+                ((c, cnt / total) for c, cnt in counter.items()),
+                key=lambda x: x[0],
+            ),
+            "end": end / total,
+        }
 
     data = {"start": start_table, "bigrams": bigram_table}
     with open(dest_path, "w", encoding="utf-8") as f:
@@ -58,7 +76,7 @@ def generate_name_char_bigram_table(
     return data
 
 
-def get_bigram_tables() -> tuple[StartTable, BigramTable]:
+def get_bigram_tables() -> tuple[StartTable, TransitionTable]:
     """Load the bigram tables used for name generation."""
     with open(
         os.path.join(DIRNAME, "data", "name_char_bigram_table.json"),
@@ -66,11 +84,21 @@ def get_bigram_tables() -> tuple[StartTable, BigramTable]:
     ) as f:
         raw_data: dict[str, Any] = json.load(f)
     start = [(str(c), float(p)) for c, p in raw_data["start"]]
+    bigrams_raw: dict[str, Any] = raw_data["bigrams"]
     bigrams: BigramTable = {
-        str(prev): [(str(c), float(p)) for c, p in nxt]
-        for prev, nxt in raw_data["bigrams"].items()
+        str(prev): {
+            "chars": [(str(c), float(p)) for c, p in entry["chars"]],
+            "end": float(entry["end"]),
+        }
+        for prev, entry in bigrams_raw.items()
     }
-    return start, bigrams
+    # ``RikishiNameGenerator`` only uses the transition probabilities.
+    bigrams_only: TransitionTable = {
+        prev: entry["chars"]
+        for prev, entry in bigrams.items()
+        if entry["chars"]
+    }
+    return start, bigrams_only
 
 
 MIN_NAME_LEN = 2

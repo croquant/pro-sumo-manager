@@ -33,6 +33,11 @@ class BigramTableGenerationTests(SimpleTestCase):
             expected = json.load(f)
         self.assertEqual(generated, expected)
 
+        for entry in generated["bigrams"].values():
+            self.assertIn("end", entry)
+            total_prob = entry["end"] + sum(p for _, p in entry["chars"])
+            self.assertAlmostEqual(total_prob, 1.0, places=6)
+
         # Cover default path usage
         with tempfile.TemporaryDirectory() as tmpdir:
             data_tmp = os.path.join(tmpdir, "data")
