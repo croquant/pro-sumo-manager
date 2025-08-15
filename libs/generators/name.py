@@ -92,7 +92,7 @@ class RikishiNameGenerator:
         return name
 
     def __check_no(self, name_jp: str) -> bool:
-        no_chars = {"\u30ce", "\u306e"}
+        no_chars = {"\u30ce", "\u306e", "\u4e43", "\u4e4b"}
         return not (name_jp[0] in no_chars or name_jp[-1] in no_chars)
 
     def __check_valid(self, name: str, name_jp: str) -> bool:
