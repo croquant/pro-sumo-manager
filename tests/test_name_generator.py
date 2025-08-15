@@ -61,6 +61,24 @@ class RikishiNameGeneratorTests(unittest.TestCase):
         )
         self.assertEqual(result, "ryu")
 
+    def test_fix_phonemes_hepburn_adjustments(self) -> None:
+        """Should normalize common Hepburn romanization patterns."""
+        generator = name.RikishiNameGenerator(seed=0)
+        cases = {
+            "si": "shi",
+            "ti": "chi",
+            "tu": "tsu",
+            "zi": "ji",
+            "hu": "fu",
+            "paa": "pa",
+        }
+        for raw, expected in cases.items():
+            with self.subTest(raw=raw):
+                result = generator._RikishiNameGenerator__fix_phonemes(  # type: ignore[attr-defined]
+                    raw
+                )
+                self.assertEqual(result, expected)
+
     def test_get_kanji_shikona_missing_start_bigram(self) -> None:
         """Should raise if the starting character has no bigrams."""
         generator = name.RikishiNameGenerator(seed=0)
