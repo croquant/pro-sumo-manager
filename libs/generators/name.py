@@ -7,7 +7,7 @@ import os
 import random
 import re
 from collections import Counter
-from typing import Any, TypedDict
+from typing import Any, Callable, TypedDict, cast
 
 import pykakasi
 
@@ -130,7 +130,7 @@ class RikishiNameGenerator:
         self.random = random.Random(seed)
         generate_name_char_bigram_table()
         self.start_table, self.bigram_table = get_bigram_tables()
-        self.kks = pykakasi.kakasi()
+        self.kks = cast(Callable[[], Any], pykakasi.kakasi)()
         self.existing_names: set[str] = set(get_initial_existing_names())
 
     def __transliterate(self, name_jp: str) -> str:
@@ -145,7 +145,8 @@ class RikishiNameGenerator:
     def _get_kanji_shikona(self) -> str:
         shikona = ""
 
-        population, weights = zip(*self.start_table, strict=False)
+        population = [c for c, _ in self.start_table]
+        weights = [p for _, p in self.start_table]
         start_c = self.random.choices(population, weights)[0]
         shikona += start_c
 
@@ -155,30 +156,29 @@ class RikishiNameGenerator:
                 f"No bigrams found for start character '{start_c}'"
             )
 
-        is_end = False
-        while not is_end:
+        while True:
             prev_c = shikona[-1]
             bigrams_table = self.bigram_table.get(prev_c)
             if bigrams_table is None:
                 raise RuntimeError(
                     f"No bigrams found for previous character '{prev_c}'"
                 )
-            is_end = self.random.random() < bigrams_table["end"]
-            if is_end:
+            if self.random.random() < bigrams_table["end"]:
                 return shikona
-            else:
-                population, weights = zip(*bigrams_table["chars"], strict=False)
-                next_c = self.random.choices(population, weights)[0]
-                shikona += next_c
+            population = [c for c, _ in bigrams_table["chars"]]
+            weights = [p for _, p in bigrams_table["chars"]]
+            next_c = self.random.choices(population, weights)[0]
+            shikona += next_c
 
     def get(self) -> tuple[str, str]:
         """
-        Generate a new unique sumo wrestler name in kanji andits romaji transliteration.
+        Generate a unique kanji sumo name and its romaji transliteration.
 
         Returns
         -------
         tuple[str, str]
-            A tuple containing the generated kanji name and its romaji equivalent.
+            A tuple containing the generated kanji name and its romaji
+            equivalent.
 
         Raises
         ------
