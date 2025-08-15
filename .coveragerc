@@ -14,6 +14,7 @@ omit =
     config/wsgi.py
     config/asgi.py
     manage.py
+    libs/generators/ai_name_transliteration.py
 show_missing = true
 skip_covered = true
 skip_empty = true
