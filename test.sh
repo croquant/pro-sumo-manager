@@ -5,12 +5,12 @@ IFS=$'\n\t'
 COVERAGE_FILE="coverage/.coverage_total"
 
 # Run tests and generate coverage
-coverage run manage.py test
-coverage json
-coverage report
+uv run coverage run manage.py test
+uv run coverage json
+uv run coverage report
 
 # Extract the overall coverage percentage (can be a decimal)
-TOTAL=$(coverage report --format=total)
+TOTAL=$(uv run coverage report --format=total)
 
 echo "Total coverage: ${TOTAL}%"
 
