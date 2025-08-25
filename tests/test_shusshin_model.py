@@ -4,9 +4,9 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.test import TestCase
 
-from core.enums.country_enum import Country
-from core.enums.jp_prefecture_enum import JPPrefecture
-from core.models import Shusshin
+from game.enums.country_enum import Country
+from game.enums.jp_prefecture_enum import JPPrefecture
+from game.models import Shusshin
 
 
 class ShusshinModelTests(TestCase):

@@ -1,4 +1,4 @@
-"""Country code enumeration used by the core app."""
+"""Country code enumeration used by the game app."""
 
 from django.db.models import TextChoices
 
