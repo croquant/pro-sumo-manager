@@ -19,12 +19,12 @@ repos:
     hooks:
       - id: django-system-check
         name: Django system check
-        entry: bash -c 'python manage.py check --fail-level=ERROR'
+        entry: bash -c 'uv run manage.py check --fail-level=ERROR'
         language: system
         types: [python]
       - id: django-migrations-check
         name: Django missing migrations check
-        entry: bash -c 'python manage.py makemigrations --check --dry-run'
+        entry: bash -c 'uv run manage.py makemigrations --check --dry-run'
         language: system
         types: [python]
 
