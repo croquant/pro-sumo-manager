@@ -2,13 +2,13 @@ from django.apps.registry import Apps
 from django.db import migrations
 from django.db.backends.base.schema import BaseDatabaseSchemaEditor
 
-from core.enums import Country, JPPrefecture
+from game.enums import Country, JPPrefecture
 
 
 def populate_shusshin(
     apps: Apps, schema_editor: BaseDatabaseSchemaEditor
 ) -> None:
-    Shusshin = apps.get_model("core", "Shusshin")
+    Shusshin = apps.get_model("game", "Shusshin")
     for country in Country:
         if country == Country.JP:
             for prefecture in JPPrefecture:
@@ -23,13 +23,13 @@ def populate_shusshin(
 def unpopulate_shusshin(
     apps: Apps, schema_editor: BaseDatabaseSchemaEditor
 ) -> None:
-    Shusshin = apps.get_model("core", "Shusshin")
+    Shusshin = apps.get_model("game", "Shusshin")
     Shusshin.objects.all().delete()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0002_shusshin_unique_shusshin_country_except_japan_and_more"),
+        ("game", "0002_shusshin_unique_shusshin_country_except_japan_and_more"),
     ]
 
     operations = [

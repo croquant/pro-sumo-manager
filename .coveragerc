@@ -2,7 +2,7 @@
 branch = True
 data_file = coverage/.coverage
 source =
-    core
+    game
     libs
 
 [report]

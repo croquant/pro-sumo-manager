@@ -1,13 +1,13 @@
-"""Admin configuration for the core app."""
+"""Admin configuration for the game app."""
 
 from django.contrib import admin
 
-from core.models import Shusshin
+from game.models import Shusshin
 
 
 @admin.register(Shusshin)
 class ShusshinAdmin(admin.ModelAdmin[Shusshin]):
-    """Admin panel configuration for :class:`core.models.Shusshin`."""
+    """Admin panel configuration for :class:`game.models.Shusshin`."""
 
     list_display = ("country", "prefecture")
     list_filter = ("country_code",)

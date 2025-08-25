@@ -5,14 +5,14 @@ from typing import cast
 from django.contrib.admin.sites import site
 from django.test import TestCase
 
-from core.admin import ShusshinAdmin
-from core.enums.country_enum import Country
-from core.enums.jp_prefecture_enum import JPPrefecture
-from core.models import Shusshin
+from game.admin import ShusshinAdmin
+from game.enums.country_enum import Country
+from game.enums.jp_prefecture_enum import JPPrefecture
+from game.models import Shusshin
 
 
 class ShusshinAdminTests(TestCase):
-    """Tests for :class:`core.admin.ShusshinAdmin`."""
+    """Tests for :class:`game.admin.ShusshinAdmin`."""
 
     def setUp(self) -> None:
         """Store the registered admin instance for reuse."""
