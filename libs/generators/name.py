@@ -7,7 +7,8 @@ import os
 import random
 import re
 from collections import Counter
-from typing import Any, Callable, TypedDict, cast
+from collections.abc import Callable
+from typing import Any, TypedDict, cast
 
 import pykakasi
 
@@ -47,7 +48,7 @@ def generate_name_char_bigram_table() -> dict[str, Any]:
     end_counts: Counter[str] = Counter()
     for name in names:
         start_counts[name[0]] += 1
-        for prev, nxt in zip(name, name[1:]):
+        for prev, nxt in zip(name, name[1:], strict=False):
             bigram_counts.setdefault(prev, Counter())[nxt] += 1
         end_counts[name[-1]] += 1
 
