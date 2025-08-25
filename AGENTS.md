@@ -2,7 +2,7 @@
 
 ## Development
 
-- Python dependencies are in `requirements.txt`.
+- Install dependencies with `uv sync` and manage versions via `uv.lock`.
 - Use `.env.example` as a reference for required environment variables.
 - Linting and formatting are enforced by **Ruff** (`ruff.toml`).
 - `pre-commit` runs Ruff, Django system checks, migration checks, and the test suite.
