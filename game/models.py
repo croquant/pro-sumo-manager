@@ -1,9 +1,9 @@
-"""Database models for the core app."""
+"""Database models for the game app."""
 
 from django.db import models
 from django.db.models import Q
 
-from core.enums import Country, JPPrefecture
+from game.enums import Country, JPPrefecture
 
 
 class Shusshin(models.Model):
