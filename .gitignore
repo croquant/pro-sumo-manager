@@ -15,5 +15,8 @@ db.sqlite3
 .coverage
 coverage.json
 
+# Prototypes and experimental code
+prototypes/
+
 # Misc
 .DS_Store
