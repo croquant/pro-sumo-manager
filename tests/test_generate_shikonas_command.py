@@ -47,9 +47,9 @@ class GenerateShikonasCommandTests(TestCase):
             seed=None, model="gpt-5-nano"
         )
 
-        # Verify generate_dict was called
+        # Verify generate_dict was called (with auto-selected batch size of 3)
         mock_generator.generate_dict.assert_called_once_with(
-            count=2, batch_size=10
+            count=2, batch_size=3
         )
 
         # Verify shikona were saved to database
@@ -124,20 +124,73 @@ class GenerateShikonasCommandTests(TestCase):
         self.assertIn("Batch size must be positive", str(ctx.exception))
 
     @patch("game.management.commands.generate_shikonas.ShikonaGenerator")
-    def test_generate_shikonas_generation_error(
+    def test_generate_shikonas_auto_batch_size(
         self, mock_generator_class: Mock
     ) -> None:
-        """Should raise CommandError when generation fails."""
+        """Should auto-select batch size based on model."""
         mock_generator = MagicMock()
         mock_generator_class.return_value = mock_generator
+        mock_generator.generate_dict.return_value = []
+
+        out = StringIO()
+        call_command("generate_shikonas", "5", stdout=out)
+
+        # Should use auto-selected batch size of 3 for gpt-5-nano
+        mock_generator.generate_dict.assert_called_once_with(
+            count=5, batch_size=3
+        )
+        output = out.getvalue()
+        self.assertIn("Auto-selected batch size 3", output)
+
+    @patch("game.management.commands.generate_shikonas.ShikonaGenerator")
+    def test_generate_shikonas_retry_on_failure(
+        self, mock_generator_class: Mock
+    ) -> None:
+        """Should retry with smaller batch size on generation failure."""
+        mock_generator = MagicMock()
+        mock_generator_class.return_value = mock_generator
+
+        # First call fails, second succeeds with smaller batch
+        mock_generator.generate_dict.side_effect = [
+            ShikonaGenerationError("API Error"),
+            [
+                {
+                    "name": "豊昇龍",
+                    "transliteration": "hoshoryu",
+                    "interpretation": "rising dragon",
+                }
+            ],
+        ]
+
+        out = StringIO()
+        call_command("generate_shikonas", "1", "--batch-size", "10", stdout=out)
+
+        # Should have been called twice: first with 10, then with 5
+        self.assertEqual(mock_generator.generate_dict.call_count, 2)
+        output = out.getvalue()
+        self.assertIn("retrying with batch size", output)
+
+        # Verify shikona was created
+        self.assertEqual(Shikona.objects.count(), 1)
+
+    @patch("game.management.commands.generate_shikonas.ShikonaGenerator")
+    def test_generate_shikonas_generation_error_after_retries(
+        self, mock_generator_class: Mock
+    ) -> None:
+        """Should raise CommandError when generation fails after all retries."""
+        mock_generator = MagicMock()
+        mock_generator_class.return_value = mock_generator
+        # Fail repeatedly until batch size reaches 1, then still fail
         mock_generator.generate_dict.side_effect = ShikonaGenerationError(
             "API Error"
         )
 
         with self.assertRaises(CommandError) as ctx:
-            call_command("generate_shikonas", "2")
+            call_command("generate_shikonas", "2", "--batch-size", "4")
 
         self.assertIn("Failed to generate shikona", str(ctx.exception))
+        # Should have retried multiple times (4 -> 2 -> 1)
+        self.assertGreaterEqual(mock_generator.generate_dict.call_count, 3)
 
     @patch("game.management.commands.generate_shikonas.ShikonaGenerator")
     def test_generate_shikonas_initialization_error(

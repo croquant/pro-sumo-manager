@@ -112,14 +112,14 @@ class ShikonaGenerator:
             ) from e
 
     def generate_batch(
-        self, count: int, batch_size: int = 10
+        self, count: int, batch_size: int = 3
     ) -> list[ShikonaInterpretation]:
         """
         Generate multiple complete shikona with interpretations.
 
         Args:
             count: Number of shikona to generate.
-            batch_size: Number of names to process per API call (default: 10).
+            batch_size: Number of names to process per API call (default: 3).
 
         Returns:
             List of ShikonaInterpretation objects.
@@ -178,14 +178,14 @@ class ShikonaGenerator:
         return results[0]
 
     def generate_dict(
-        self, count: int, batch_size: int = 10
+        self, count: int, batch_size: int = 3
     ) -> list[dict[str, Any]]:
         """
         Generate shikona as dictionaries for database insertion.
 
         Args:
             count: Number of shikona to generate.
-            batch_size: Number of names to process per API call (default: 10).
+            batch_size: Number of names to process per API call (default: 3).
 
         Returns:
             List of dicts with keys: name, transliteration, interpretation.
