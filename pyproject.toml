@@ -24,18 +24,5 @@ dev = [
     "ruff>=0.12.10",
 ]
 
-[tool.mypy]
-python_version = "3.13"
-plugins = ["mypy_django_plugin.main"]
-strict = true
-warn_unused_ignores = true
-no_implicit_optional = true
-disallow_any_generics = true
-exclude = ["migrations/"]
-
-[[tool.mypy.overrides]]
-module = "pydantic"
-ignore_missing_imports = true
-
 [tool.django-stubs]
 django_settings_module = "config.settings"

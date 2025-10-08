@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 DIRNAME = os.path.dirname(__file__)
 
 
-class ShikonaInterpretation(BaseModel):  # type: ignore[misc]
+class ShikonaInterpretation(BaseModel):
     """Structured response for a single shikona from OpenAI."""
 
     shikona: str
@@ -26,7 +26,7 @@ class ShikonaInterpretation(BaseModel):  # type: ignore[misc]
     interpretation: str
 
 
-class ShikonaBatchResponse(BaseModel):  # type: ignore[misc]
+class ShikonaBatchResponse(BaseModel):
     """Batch response containing multiple shikona interpretations."""
 
     rikishi: list[ShikonaInterpretation]
@@ -99,12 +99,12 @@ class ShikonaGenerator:
                 ],
                 text_format=ShikonaBatchResponse,
             )
-            result = response.output_parsed
+            result: ShikonaBatchResponse | None = response.output_parsed
             if result is None:
                 raise ShikonaGenerationError(
                     "OpenAI response parsing returned None"
                 )
-            return result  # type: ignore[no-any-return]
+            return result
         except Exception as e:
             logger.error(f"OpenAI API call failed: {e}")
             raise ShikonaGenerationError(

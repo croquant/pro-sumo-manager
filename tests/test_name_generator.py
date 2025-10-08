@@ -48,17 +48,13 @@ class RikishiNameGeneratorTests(unittest.TestCase):
     def test_transliterate_returns_romaji(self) -> None:
         """Should transliterate kanji into romaji."""
         generator = name.RikishiNameGenerator(seed=0)
-        result = generator._RikishiNameGenerator__transliterate(  # type: ignore[attr-defined]
-            "魁"
-        )
+        result = generator._RikishiNameGenerator__transliterate("魁")
         self.assertEqual(result, "kai")
 
     def test_fix_phonemes_adjusts_output(self) -> None:
         """Should apply phoneme replacements to romaji."""
         generator = name.RikishiNameGenerator(seed=0)
-        result = generator._RikishiNameGenerator__fix_phonemes(  # type: ignore[attr-defined]
-            "ryuu"
-        )
+        result = generator._RikishiNameGenerator__fix_phonemes("ryuu")
         self.assertEqual(result, "ryu")
 
     def test_fix_phonemes_hepburn_adjustments(self) -> None:
@@ -74,9 +70,7 @@ class RikishiNameGeneratorTests(unittest.TestCase):
         }
         for raw, expected in cases.items():
             with self.subTest(raw=raw):
-                result = generator._RikishiNameGenerator__fix_phonemes(  # type: ignore[attr-defined]
-                    raw
-                )
+                result = generator._RikishiNameGenerator__fix_phonemes(raw)
                 self.assertEqual(result, expected)
 
     def test_get_kanji_shikona_missing_start_bigram(self) -> None:
@@ -100,6 +94,6 @@ class RikishiNameGeneratorTests(unittest.TestCase):
         with patch("libs.generators.name.MAX_ATTEMPTS", 1):
             generator = name.RikishiNameGenerator(seed=0)
             existing = next(iter(generator.existing_names))
-            generator._get_kanji_shikona = lambda: existing  # type: ignore[method-assign]
+            generator._get_kanji_shikona = lambda: existing
             with self.assertRaises(RuntimeError):
                 generator.get()
