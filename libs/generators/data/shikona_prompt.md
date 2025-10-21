@@ -33,7 +33,7 @@ SHUSSHIN: Aomori
 
 Return **only** a JSON object with exactly these fields:
 
-- `"shikona"`: the processed shikona (see modification rules below)
+- `"shikona"`: the processed shikona (may be modified per rules below, or unchanged if no context provided)
 - `"transliteration"`: the shikona in **romaji**, ASCII lowercase, no spaces, no hyphens, no macrons/diacritics
 - `"interpretation"`: a very short 1-5 word English gloss that captures the name's sense/feel
 
