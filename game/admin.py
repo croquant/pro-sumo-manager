@@ -30,5 +30,6 @@ class ShikonaAdmin(admin.ModelAdmin[Shikona]):
     """Admin panel configuration for :class:`game.models.Shikona`."""
 
     list_display = ("transliteration", "name", "parent", "interpretation")
+    list_select_related = ("parent",)
     search_fields = ("name", "transliteration")
     ordering = ("transliteration",)

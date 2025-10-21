@@ -1,5 +1,6 @@
 """Tests for the Shikona model."""
 
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
@@ -111,3 +112,97 @@ class ShikonaModelTests(TestCase):
         self.assertEqual(parent.children.count(), 2)
         self.assertIn(child1, parent.children.all())
         self.assertIn(child2, parent.children.all())
+
+    def test_prevent_self_reference(self) -> None:
+        """Should prevent a shikona from being its own parent."""
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        shikona.parent = shikona
+        with self.assertRaises(ValidationError) as cm:
+            shikona.full_clean()
+        self.assertIn("parent", cm.exception.message_dict)
+        self.assertIn(
+            "A shikona cannot be its own parent",
+            cm.exception.message_dict["parent"][0],
+        )
+
+    def test_prevent_two_node_circular_reference(self) -> None:
+        """Should prevent circular reference in a two-node chain."""
+        parent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        child = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=parent,
+        )
+        # Try to set parent's parent to child (creating A -> B -> A)
+        parent.parent = child
+        with self.assertRaises(ValidationError) as cm:
+            parent.full_clean()
+        self.assertIn("parent", cm.exception.message_dict)
+        self.assertIn(
+            "circular reference",
+            cm.exception.message_dict["parent"][0],
+        )
+
+    def test_prevent_three_node_circular_reference(self) -> None:
+        """Should prevent circular reference in a three-node chain."""
+        grandparent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        parent = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=grandparent,
+        )
+        child = Shikona.objects.create(
+            name="白鳳",
+            transliteration="Hakuhou",
+            interpretation="White Phoenix",
+            parent=parent,
+        )
+        # Try to set grandparent's parent to child (creating A -> B -> C -> A)
+        grandparent.parent = child
+        with self.assertRaises(ValidationError) as cm:
+            grandparent.full_clean()
+        self.assertIn("parent", cm.exception.message_dict)
+        self.assertIn(
+            "circular reference",
+            cm.exception.message_dict["parent"][0],
+        )
+
+    def test_allow_valid_lineage_chain(self) -> None:
+        """Should allow valid lineage chains without circular references."""
+        grandparent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        parent = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=grandparent,
+        )
+        child = Shikona.objects.create(
+            name="白鳳",
+            transliteration="Hakuhou",
+            interpretation="White Phoenix",
+            parent=parent,
+        )
+        # This should not raise any errors
+        child.full_clean()
+        grandparent.full_clean()  # Test validation with no parent
+        self.assertEqual(child.parent, parent)
+        self.assertEqual(parent.parent, grandparent)
+        self.assertIsNone(grandparent.parent)
