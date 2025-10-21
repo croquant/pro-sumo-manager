@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from game.models import Shusshin
+from game.models import Shikona, Shusshin
 
 
 @admin.register(Shusshin)
@@ -23,3 +23,13 @@ class ShusshinAdmin(admin.ModelAdmin[Shusshin]):
     def prefecture(self, obj: Shusshin) -> str:
         """Return the human-readable prefecture name."""
         return obj.get_jp_prefecture_display()
+
+
+@admin.register(Shikona)
+class ShikonaAdmin(admin.ModelAdmin[Shikona]):
+    """Admin panel configuration for :class:`game.models.Shikona`."""
+
+    list_display = ("transliteration", "name", "parent", "interpretation")
+    list_select_related = ("parent",)
+    search_fields = ("name", "transliteration")
+    ordering = ("transliteration",)
