@@ -2,40 +2,37 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-from typing import Any
+from typing import Final
 
-from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel
 
 from libs.generators.name import RikishiNameGenerator
+from libs.singletons.openai import openai_singleton
 
 logger = logging.getLogger(__name__)
 
-DIRNAME = os.path.dirname(__file__)
+DIRNAME: Final[str] = os.path.dirname(__file__)
 
 
 class ShikonaInterpretation(BaseModel):
-    """Structured response for a single shikona from OpenAI."""
+    """Structured response for a single shikona interpretation from OpenAI."""
 
     shikona: str
     transliteration: str
     interpretation: str
 
 
-class ShikonaBatchResponse(BaseModel):
-    """Batch response containing multiple shikona interpretations."""
-
-    rikishi: list[ShikonaInterpretation]
-
-
 class ShikonaGenerationError(Exception):
     """Raised when shikona generation fails."""
 
-    pass
+
+def _load_system_prompt() -> str:
+    """Load the system prompt from the shikona_prompt.md file."""
+    prompt_path = os.path.join(DIRNAME, "data", "shikona_prompt.md")
+    with open(prompt_path, encoding="utf-8") as f:
+        return f.read()
 
 
 class ShikonaGenerator:
@@ -46,60 +43,49 @@ class ShikonaGenerator:
     for proper romanization and meaningful interpretations.
     """
 
+    # Load system prompt once at class level
+    _system_prompt: Final[str] = _load_system_prompt()
+
     def __init__(
         self,
-        api_key: str | None = None,
         seed: int | None = None,
-        model: str = "gpt-5-nano",
     ) -> None:
         """
         Initialize the shikona generator.
 
         Args:
-            api_key: OpenAI API key. If None, reads from OPENAI_API_KEY env var.
             seed: Optional seed for deterministic name generation.
-            model: OpenAI model to use (default: gpt-5-nano).
 
         """
-        load_dotenv()
         self.name_generator = RikishiNameGenerator(seed=seed)
-        self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
-        self.model = model
-        self._load_prompt()
+        self.client = openai_singleton
 
-    def _load_prompt(self) -> None:
-        """Load the system prompt from the shikona_prompt.md file."""
-        prompt_path = os.path.join(DIRNAME, "data", "shikona_prompt.md")
-        with open(prompt_path, encoding="utf-8") as f:
-            self.system_prompt = f.read()
-
-    def _call_openai(self, kanji_names: list[str]) -> ShikonaBatchResponse:
+    def _call_openai(self, kanji_name: str) -> ShikonaInterpretation:
         """
-        Call OpenAI API to get romanization and interpretation for kanji names.
+        Call OpenAI API to get romanization and interpretation for a kanji name.
 
         Args:
-            kanji_names: List of kanji shikona to process.
+            kanji_name: Kanji shikona to process.
 
         Returns:
-            ShikonaBatchResponse with processed shikona data.
+            ShikonaInterpretation with romanization and interpretation.
 
         Raises:
             ShikonaGenerationError: If the API call fails.
 
         """
-        user_prompt = json.dumps(kanji_names, ensure_ascii=False)
-
         try:
             response = self.client.responses.parse(
-                model=self.model,
-                reasoning={"effort": "low"},
+                model="gpt-5-nano",
+                reasoning_effort="low",
+                temperature=0,
                 input=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_prompt},
+                    {"role": "system", "content": self._system_prompt},
+                    {"role": "user", "content": kanji_name},
                 ],
-                text_format=ShikonaBatchResponse,
+                text_format=ShikonaInterpretation,
             )
-            result: ShikonaBatchResponse | None = response.output_parsed
+            result: ShikonaInterpretation | None = response.output_parsed
             if result is None:
                 raise ShikonaGenerationError(
                     "OpenAI response parsing returned None"
@@ -110,58 +96,6 @@ class ShikonaGenerator:
             raise ShikonaGenerationError(
                 f"Failed to process shikona via OpenAI: {e}"
             ) from e
-
-    def generate_batch(
-        self, count: int, batch_size: int = 3
-    ) -> list[ShikonaInterpretation]:
-        """
-        Generate multiple complete shikona with interpretations.
-
-        Args:
-            count: Number of shikona to generate.
-            batch_size: Number of names to process per API call (default: 3).
-
-        Returns:
-            List of ShikonaInterpretation objects.
-
-        Raises:
-            ShikonaGenerationError: If generation fails.
-
-        """
-        all_results: list[ShikonaInterpretation] = []
-        remaining = count
-
-        while remaining > 0:
-            current_batch_size = min(batch_size, remaining)
-
-            # Generate kanji names using the name generator
-            kanji_names = [
-                self.name_generator.get()[0] for _ in range(current_batch_size)
-            ]
-
-            logger.info(
-                f"Generated {current_batch_size} kanji names, "
-                f"sending to OpenAI for processing"
-            )
-
-            # Get interpretations from OpenAI
-            batch_response = self._call_openai(kanji_names)
-
-            # Validate response
-            if len(batch_response.rikishi) != current_batch_size:
-                logger.warning(
-                    f"Expected {current_batch_size} results but got "
-                    f"{len(batch_response.rikishi)}"
-                )
-
-            all_results.extend(batch_response.rikishi)
-            remaining -= current_batch_size
-
-            logger.info(
-                f"Processed {len(all_results)}/{count} shikona successfully"
-            )
-
-        return all_results[:count]  # Ensure we return exactly count results
 
     def generate_single(self) -> ShikonaInterpretation:
         """
@@ -174,29 +108,41 @@ class ShikonaGenerator:
             ShikonaGenerationError: If generation fails.
 
         """
-        results = self.generate_batch(count=1, batch_size=1)
-        return results[0]
+        kanji_name = self.name_generator.get()[0]
+        logger.debug(
+            f"Generated kanji name {kanji_name}, "
+            "sending to OpenAI for processing"
+        )
 
-    def generate_dict(
-        self, count: int, batch_size: int = 3
-    ) -> list[dict[str, Any]]:
+        interpretation = self._call_openai(kanji_name)
+        logger.debug(f"Received interpretation: {interpretation}")
+
+        return interpretation
+
+    def generate_batch(self, count: int) -> list[ShikonaInterpretation]:
         """
-        Generate shikona as dictionaries for database insertion.
+        Generate multiple complete shikona with interpretations.
 
         Args:
-            count: Number of shikona to generate.
-            batch_size: Number of names to process per API call (default: 3).
+            count: Number of shikona to generate. Must be positive.
 
         Returns:
-            List of dicts with keys: name, transliteration, interpretation.
+            List of ShikonaInterpretation objects.
+
+        Raises:
+            ValueError: If count is not positive.
+            ShikonaGenerationError: If generation fails.
 
         """
-        results = self.generate_batch(count=count, batch_size=batch_size)
-        return [
-            {
-                "name": r.shikona,
-                "transliteration": r.transliteration,
-                "interpretation": r.interpretation,
-            }
-            for r in results
-        ]
+        if count <= 0:
+            raise ValueError(f"count must be positive, got {count}")
+
+        all_results: list[ShikonaInterpretation] = []
+        for i in range(count):
+            interpretation = self.generate_single()
+
+            all_results.append(interpretation)
+
+            logger.info(f"Processed {i + 1}/{count} shikona successfully")
+
+        return all_results
