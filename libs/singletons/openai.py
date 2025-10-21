@@ -12,7 +12,7 @@ load_dotenv()
 _openai_instance: OpenAI | None = None
 
 
-def get_openai_client() -> OpenAI:
+def get_openai_singleton() -> OpenAI:
     """
     Get or create the OpenAI client instance (lazy initialization).
 
@@ -33,15 +33,3 @@ def get_openai_client() -> OpenAI:
             )
         _openai_instance = OpenAI(api_key=api_key)
     return _openai_instance
-
-
-# For backwards compatibility, create a property-like access
-class _OpenAISingleton:
-    """Wrapper class to provide property-like access to the OpenAI client."""
-
-    def __getattr__(self, name: str) -> object:
-        """Proxy all attributes to the underlying OpenAI client."""
-        return getattr(get_openai_client(), name)
-
-
-openai_singleton = _OpenAISingleton()

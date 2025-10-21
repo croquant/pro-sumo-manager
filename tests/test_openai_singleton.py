@@ -5,11 +5,11 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from libs.singletons.openai import _OpenAISingleton, get_openai_client
+from libs.singletons.openai import get_openai_singleton
 
 
 class OpenAIClientTests(unittest.TestCase):
-    """Tests for the get_openai_client function."""
+    """Tests for the get_openai_singleton function."""
 
     @patch("libs.singletons.openai.OpenAI")
     @patch("libs.singletons.openai.os.getenv")
@@ -26,7 +26,7 @@ class OpenAIClientTests(unittest.TestCase):
 
         libs.singletons.openai._openai_instance = None
 
-        client = get_openai_client()
+        client = get_openai_singleton()
 
         self.assertEqual(client, mock_client)
         mock_openai.assert_called_once_with(api_key="test-api-key")
@@ -44,7 +44,7 @@ class OpenAIClientTests(unittest.TestCase):
         libs.singletons.openai._openai_instance = None
 
         with self.assertRaises(ValueError) as ctx:
-            get_openai_client()
+            get_openai_singleton()
 
         self.assertIn("OPENAI_API_KEY", str(ctx.exception))
 
@@ -63,43 +63,9 @@ class OpenAIClientTests(unittest.TestCase):
 
         libs.singletons.openai._openai_instance = None
 
-        client1 = get_openai_client()
-        client2 = get_openai_client()
+        client1 = get_openai_singleton()
+        client2 = get_openai_singleton()
 
         self.assertIs(client1, client2)
         # Should only create the client once
         mock_openai.assert_called_once()
-
-
-class OpenAISingletonWrapperTests(unittest.TestCase):
-    """Tests for the _OpenAISingleton wrapper class."""
-
-    @patch("libs.singletons.openai.get_openai_client")
-    def test_openai_singleton_proxy_attribute(
-        self, mock_get_client: MagicMock
-    ) -> None:
-        """Should proxy attributes to the underlying OpenAI client."""
-        mock_client = MagicMock()
-        mock_client.responses = MagicMock()
-        mock_get_client.return_value = mock_client
-
-        wrapper = _OpenAISingleton()
-        responses = wrapper.responses
-
-        self.assertEqual(responses, mock_client.responses)
-        mock_get_client.assert_called_once()
-
-    @patch("libs.singletons.openai.get_openai_client")
-    def test_openai_singleton_proxy_method(
-        self, mock_get_client: MagicMock
-    ) -> None:
-        """Should proxy method calls to the underlying OpenAI client."""
-        mock_client = MagicMock()
-        mock_client.some_method.return_value = "result"
-        mock_get_client.return_value = mock_client
-
-        wrapper = _OpenAISingleton()
-        result = wrapper.some_method()
-
-        self.assertEqual(result, "result")
-        mock_client.some_method.assert_called_once()

@@ -9,7 +9,7 @@ from typing import Final
 from pydantic import BaseModel
 
 from libs.generators.name import RikishiNameGenerator
-from libs.singletons.openai import openai_singleton
+from libs.singletons.openai import get_openai_singleton
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class ShikonaGenerator:
 
         """
         self.name_generator = RikishiNameGenerator(seed=seed)
-        self.client = openai_singleton
+        self.client = get_openai_singleton()
 
     def _call_openai(
         self,
