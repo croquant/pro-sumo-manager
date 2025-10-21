@@ -3,8 +3,8 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
+from game.constants import N_DAYS, N_MONTHS
 from game.models import GameDate
-from game.models.gamedate import N_DAYS, N_MONTHS
 from game.services import GameClockService
 
 

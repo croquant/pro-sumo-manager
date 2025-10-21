@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from django.db import transaction
 
-from game.models.gamedate import N_DAYS, N_MONTHS, GameDate
+from game.constants import N_DAYS, N_MONTHS
+from game.models.gamedate import GameDate
 
 
 class GameClockService:
