@@ -14,8 +14,8 @@ class GameDate(models.Model):
     """
     Represents a single day in the game's internal calendar.
 
-    The game uses a simplified calendar system with {N_MONTHS} months
-    and {N_DAYS} days per month. Each tick of the game clock creates
+    The game uses a simplified calendar system with 12 months
+    and 24 days per month. Each tick of the game clock creates
     a new GameDate record, providing a complete historical timeline.
 
     This model should not be created directly. Use GameClockService

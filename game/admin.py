@@ -50,7 +50,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     def has_add_permission(
         self,
         request: HttpRequest,
-        obj: GameDate | None = None,
+        _obj: GameDate | None = None,
     ) -> bool:
         """Disable manual creation - use GameClockService instead."""
         return False
@@ -58,7 +58,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     def has_change_permission(
         self,
         request: HttpRequest,
-        obj: GameDate | None = None,
+        _obj: GameDate | None = None,
     ) -> bool:
         """Disable editing - dates are immutable."""
         return False
@@ -66,7 +66,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     def has_delete_permission(
         self,
         request: HttpRequest,
-        obj: GameDate | None = None,
+        _obj: GameDate | None = None,
     ) -> bool:
         """Disable deletion - preserve historical record."""
         return False

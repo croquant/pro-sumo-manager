@@ -165,6 +165,26 @@ class GameClockServiceTests(TestCase):
         self.assertEqual(date1.day, 2)
         self.assertEqual(date2.day, 3)
 
+    def test_concurrent_initialize_safety(self) -> None:
+        """Should handle concurrent initialization safely."""
+        # First initialization creates the date
+        date1 = GameClockService.initialize()
+        self.assertEqual(date1.year, 1)
+        self.assertEqual(date1.month, 1)
+        self.assertEqual(date1.day, 1)
+
+        # Second initialization should return the same date,
+        # not create a new one
+        date2 = GameClockService.initialize()
+        self.assertEqual(date2.pk, date1.pk)
+        self.assertEqual(GameDate.objects.count(), 1)
+
+        # After ticking, initialize should return the latest date
+        GameClockService.tick()
+        date3 = GameClockService.initialize()
+        self.assertNotEqual(date3.pk, date1.pk)
+        self.assertEqual(date3.day, 2)
+
     def test_gamedate_str_representation(self) -> None:
         """Should format date string correctly."""
         date = GameDate.objects.create(year=123, month=4, day=5)

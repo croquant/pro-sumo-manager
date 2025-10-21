@@ -19,7 +19,12 @@ class GameClockService:
     @staticmethod
     def get_current() -> GameDate | None:
         """
-        Get the current game date.
+        Get the current game date for read-only access.
+
+        This method does not acquire locks and is intended for read-only
+        queries. If you need to access the current date within a transaction
+        that will modify dates, use initialize() instead to ensure proper
+        locking.
 
         Returns
         -------
@@ -63,7 +68,7 @@ class GameClockService:
 
         Creates a new GameDate record representing the next day in the game
         calendar. Handles day/month/year rollovers according to the game's
-        calendar system ({N_DAYS} days per month, {N_MONTHS} months per year).
+        calendar system (24 days per month, 12 months per year).
 
         If no dates exist yet, initializes the calendar first.
 
