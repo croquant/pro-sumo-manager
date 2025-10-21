@@ -60,12 +60,19 @@ class ShikonaGenerator:
         self.name_generator = RikishiNameGenerator(seed=seed)
         self.client = openai_singleton
 
-    def _call_openai(self, kanji_name: str) -> ShikonaInterpretation:
+    def _call_openai(
+        self,
+        kanji_name: str,
+        parent_shikona: str | None = None,
+        shusshin: str | None = None,
+    ) -> ShikonaInterpretation:
         """
         Call OpenAI API to get romanization and interpretation for a kanji name.
 
         Args:
             kanji_name: Kanji shikona to process.
+            parent_shikona: Optional parent shikona to create a related name.
+            shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
             ShikonaInterpretation with romanization and interpretation.
@@ -74,17 +81,28 @@ class ShikonaGenerator:
             ShikonaGenerationError: If the API call fails.
 
         """
+        # Format the user message based on context provided
+        if parent_shikona or shusshin:
+            parts = [f"GENERATED: {kanji_name}"]
+            if parent_shikona:
+                parts.append(f"PARENT: {parent_shikona}")
+            if shusshin:
+                parts.append(f"SHUSSHIN: {shusshin}")
+            user_message = "\n".join(parts)
+        else:
+            user_message = kanji_name
+
         try:
             response = self.client.responses.parse(
-                model="gpt-5-nano",
-                reasoning_effort="low",
-                temperature=0,
+                model="gpt-5-mini",
+                reasoning={"effort": "low"},
                 input=[
                     {"role": "system", "content": self._system_prompt},
-                    {"role": "user", "content": kanji_name},
+                    {"role": "user", "content": user_message},
                 ],
                 text_format=ShikonaInterpretation,
             )
+            logger.info("OpenAI API Usage: %s", response.usage)
             result: ShikonaInterpretation | None = response.output_parsed
             if result is None:
                 raise ShikonaGenerationError(
@@ -97,9 +115,17 @@ class ShikonaGenerator:
                 f"Failed to process shikona via OpenAI: {e}"
             ) from e
 
-    def generate_single(self) -> ShikonaInterpretation:
+    def generate_single(
+        self,
+        parent_shikona: str | None = None,
+        shusshin: str | None = None,
+    ) -> ShikonaInterpretation:
         """
         Generate a single complete shikona with interpretation.
+
+        Args:
+            parent_shikona: Optional parent shikona to create a related name.
+            shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
             ShikonaInterpretation object.
@@ -114,17 +140,24 @@ class ShikonaGenerator:
             "sending to OpenAI for processing"
         )
 
-        interpretation = self._call_openai(kanji_name)
+        interpretation = self._call_openai(kanji_name, parent_shikona, shusshin)
         logger.debug(f"Received interpretation: {interpretation}")
 
         return interpretation
 
-    def generate_batch(self, count: int) -> list[ShikonaInterpretation]:
+    def generate_batch(
+        self,
+        count: int,
+        parent_shikona: str | None = None,
+        shusshin: str | None = None,
+    ) -> list[ShikonaInterpretation]:
         """
         Generate multiple complete shikona with interpretations.
 
         Args:
             count: Number of shikona to generate. Must be positive.
+            parent_shikona: Optional parent shikona to create related names.
+            shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
             List of ShikonaInterpretation objects.
@@ -139,7 +172,7 @@ class ShikonaGenerator:
 
         all_results: list[ShikonaInterpretation] = []
         for i in range(count):
-            interpretation = self.generate_single()
+            interpretation = self.generate_single(parent_shikona, shusshin)
 
             all_results.append(interpretation)
 
