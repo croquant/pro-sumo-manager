@@ -1,5 +1,7 @@
 """Ring name model for a sumo wrestler."""
 
+from __future__ import annotations
+
 from django.db import models
 
 
@@ -9,6 +11,13 @@ class Shikona(models.Model):
     name = models.CharField(max_length=8, unique=True)
     transliteration = models.CharField(max_length=32, unique=True)
     interpretation = models.CharField(max_length=64)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+    )
 
     class Meta:
         """Model metadata."""

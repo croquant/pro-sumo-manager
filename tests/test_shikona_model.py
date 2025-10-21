@@ -45,3 +45,69 @@ class ShikonaModelTests(TestCase):
                 transliteration="Tsururyu",
                 interpretation="Phoenix",
             )
+
+    def test_parent_field_optional(self) -> None:
+        """Should allow creating Shikona without a parent."""
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        self.assertIsNone(shikona.parent)
+
+    def test_parent_child_relationship(self) -> None:
+        """Should establish parent-child relationship between Shikona."""
+        parent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        child = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=parent,
+        )
+        self.assertEqual(child.parent, parent)
+        self.assertIn(child, parent.children.all())
+
+    def test_parent_deletion_sets_null(self) -> None:
+        """Should set parent to null when parent is deleted."""
+        parent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        child = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=parent,
+        )
+        parent.delete()
+
+        child.refresh_from_db()
+        self.assertIsNone(child.parent)
+
+    def test_multiple_children(self) -> None:
+        """Should allow a parent to have multiple children."""
+        parent = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        child1 = Shikona.objects.create(
+            name="鳳凰",
+            transliteration="Hououmaru",
+            interpretation="Phoenix Circle",
+            parent=parent,
+        )
+        child2 = Shikona.objects.create(
+            name="白鳳",
+            transliteration="Hakuhou",
+            interpretation="White Phoenix",
+            parent=parent,
+        )
+        self.assertEqual(parent.children.count(), 2)
+        self.assertIn(child1, parent.children.all())
+        self.assertIn(child2, parent.children.all())
