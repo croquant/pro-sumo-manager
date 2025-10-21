@@ -31,7 +31,7 @@ class GameClockService:
             The current GameDate, or None if the game hasn't been initialized.
 
         """
-        return GameDate.objects.order_by("-year", "-month", "-day").first()
+        return GameDate.objects.first()
 
     @staticmethod
     def initialize() -> GameDate:
@@ -52,11 +52,7 @@ class GameClockService:
         """
         with transaction.atomic():
             # Lock the table for updates
-            current = (
-                GameDate.objects.select_for_update()
-                .order_by("-year", "-month", "-day")
-                .first()
-            )
+            current = GameDate.objects.select_for_update().first()
             if current is None:
                 current = GameDate.objects.create(year=1, month=1, day=1)
             return current
@@ -68,7 +64,7 @@ class GameClockService:
 
         Creates a new GameDate record representing the next day in the game
         calendar. Handles day/month/year rollovers according to the game's
-        calendar system (24 days per month, 12 months per year).
+        calendar system (N_DAYS days per month, N_MONTHS months per year).
 
         If no dates exist yet, initializes the calendar first.
 
@@ -83,11 +79,7 @@ class GameClockService:
         """
         with transaction.atomic():
             # Lock the table for updates
-            current_date = (
-                GameDate.objects.select_for_update()
-                .order_by("-year", "-month", "-day")
-                .first()
-            )
+            current_date = GameDate.objects.select_for_update().first()
 
             # Initialize if this is the first tick
             if current_date is None:

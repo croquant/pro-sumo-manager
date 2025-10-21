@@ -83,8 +83,8 @@ COUNTRY_PROBABILITIES: Final[dict[str, float]] = {
 class Shusshin(BaseModel):
     """Wrestler origin data (Django-agnostic)."""
 
-    country: str
-    jp_prefecture: str | None = None
+    country_code: str
+    jp_prefecture: str = ""
 
 
 class ShusshinGenerator:
@@ -103,23 +103,28 @@ class ShusshinGenerator:
     def _get_japanese(self) -> Shusshin:
         """Select Japanese wrestler origin weighted by prefecture."""
         population, weights = zip(
-            *PREFECTURE_PROBABILITIES.items(), strict=False
+            *PREFECTURE_PROBABILITIES.items(), strict=True
         )
         prefecture_code = self.random.choices(
             population=population, weights=weights
         )[0]
-        return Shusshin(country="JP", jp_prefecture=prefecture_code)
+        return Shusshin(country_code="JP", jp_prefecture=prefecture_code)
 
     def _get_foreigner(self) -> Shusshin:
         """Select foreign wrestler origin weighted by historical data."""
-        population, weights = zip(*COUNTRY_PROBABILITIES.items(), strict=False)
+        population, weights = zip(*COUNTRY_PROBABILITIES.items(), strict=True)
         country = self.random.choices(population=population, weights=weights)[0]
 
         if country == "Other":
-            # Select random country from all countries except Japan
-            non_jp_countries = [
-                c.alpha_2 for c in pycountry.countries if c.alpha_2 != "JP"
+            # Select random country except explicitly listed ones
+            excluded_countries = {
+                key for key in COUNTRY_PROBABILITIES if key != "Other"
+            } | {"JP"}
+            available_countries = [
+                c.alpha_2
+                for c in pycountry.countries
+                if c.alpha_2 not in excluded_countries
             ]
-            country = self.random.choice(non_jp_countries)
+            country = self.random.choice(available_countries)
 
-        return Shusshin(country=country)
+        return Shusshin(country_code=country)

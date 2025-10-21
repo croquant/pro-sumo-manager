@@ -5,6 +5,9 @@ from __future__ import annotations
 import unittest
 from collections import Counter
 
+from django.test import TestCase
+
+from game.models import Shusshin as DjangoShusshin
 from libs.generators.shusshin import (
     COUNTRY_PROBABILITIES,
     JAPANESE_PROB,
@@ -42,7 +45,7 @@ class TestShusshinGenerator(unittest.TestCase):
         gen = ShusshinGenerator(seed=42)
         results = [gen.get() for _ in range(10000)]
 
-        japanese_count = sum(1 for s in results if s.country == "JP")
+        japanese_count = sum(1 for s in results if s.country_code == "JP")
         ratio = japanese_count / len(results)
 
         # Allow for statistical variance (~2% tolerance)
@@ -54,8 +57,8 @@ class TestShusshinGenerator(unittest.TestCase):
         gen = ShusshinGenerator(seed=42)
         for _ in range(1000):
             shusshin = gen.get()
-            if shusshin.country == "JP":
-                self.assertIsNotNone(shusshin.jp_prefecture)
+            if shusshin.country_code == "JP":
+                self.assertNotEqual(shusshin.jp_prefecture, "")
                 self.assertTrue(shusshin.jp_prefecture.startswith("JP-"))
                 self.assertEqual(len(shusshin.jp_prefecture), 5)
 
@@ -64,8 +67,8 @@ class TestShusshinGenerator(unittest.TestCase):
         gen = ShusshinGenerator(seed=42)
         for _ in range(5000):  # More iterations to get enough foreigners
             shusshin = gen.get()
-            if shusshin.country != "JP":
-                self.assertIsNone(shusshin.jp_prefecture)
+            if shusshin.country_code != "JP":
+                self.assertEqual(shusshin.jp_prefecture, "")
 
     def test_foreign_shusshin_never_japan(self) -> None:
         """Foreign wrestlers (no prefecture) can't have country='JP'."""
@@ -73,8 +76,8 @@ class TestShusshinGenerator(unittest.TestCase):
         # Generate many to test "Other" path
         for _ in range(5000):
             shusshin = gen.get()
-            if shusshin.jp_prefecture is None:
-                self.assertNotEqual(shusshin.country, "JP")
+            if shusshin.jp_prefecture == "":
+                self.assertNotEqual(shusshin.country_code, "JP")
 
     def test_all_prefectures_can_be_selected(self) -> None:
         """All 47 prefectures should be possible (given enough samples)."""
@@ -86,7 +89,7 @@ class TestShusshinGenerator(unittest.TestCase):
         max_attempts = 100000
         while len(prefectures) < 47 and attempts < max_attempts:
             shusshin = gen.get()
-            if shusshin.country == "JP" and shusshin.jp_prefecture:
+            if shusshin.country_code == "JP" and shusshin.jp_prefecture:
                 prefectures.add(shusshin.jp_prefecture)
             attempts += 1
 
@@ -108,7 +111,7 @@ class TestShusshinGenerator(unittest.TestCase):
         num_samples = 50000
         for _ in range(num_samples):
             shusshin = gen.get()
-            if shusshin.country == "JP" and shusshin.jp_prefecture:
+            if shusshin.country_code == "JP" and shusshin.jp_prefecture:
                 prefecture_counts[shusshin.jp_prefecture] += 1
 
         total_japanese = sum(prefecture_counts.values())
@@ -132,8 +135,8 @@ class TestShusshinGenerator(unittest.TestCase):
         num_samples = 50000
         for _ in range(num_samples):
             shusshin = gen.get()
-            if shusshin.country != "JP":
-                country_counts[shusshin.country] += 1
+            if shusshin.country_code != "JP":
+                country_counts[shusshin.country_code] += 1
 
         total_foreign = sum(country_counts.values())
 
@@ -153,7 +156,7 @@ class TestShusshinGenerator(unittest.TestCase):
         for _ in range(10000):
             shusshin = gen.get()
             # Foreign wrestlers not in the explicit country list
-            if shusshin.country != "JP" and shusshin.country not in [
+            if shusshin.country_code != "JP" and shusshin.country_code not in [
                 "MN",
                 "CN",
                 "RU",
@@ -166,13 +169,27 @@ class TestShusshinGenerator(unittest.TestCase):
                 "KZ",
                 "EE",
             ]:
-                other_countries.add(shusshin.country)
+                other_countries.add(shusshin.country_code)
 
         # Should have some "Other" countries
         self.assertGreater(len(other_countries), 0)
 
-        # None should be JP
+        # None should be JP or explicitly listed countries
         self.assertNotIn("JP", other_countries)
+        for country in [
+            "MN",
+            "CN",
+            "RU",
+            "KP",
+            "GE",
+            "BG",
+            "BR",
+            "US",
+            "UA",
+            "KZ",
+            "EE",
+        ]:
+            self.assertNotIn(country, other_countries)
 
     def test_probability_distributions_sum_to_one(self) -> None:
         """Prefecture and country probabilities must sum to 1.0."""
@@ -227,17 +244,129 @@ class TestShusshinPydanticModel(unittest.TestCase):
 
     def test_shusshin_model_can_be_created_japanese(self) -> None:
         """Should be able to create a Japanese Shusshin."""
-        shusshin = Shusshin(country="JP", jp_prefecture="JP-13")
-        self.assertEqual(shusshin.country, "JP")
+        shusshin = Shusshin(country_code="JP", jp_prefecture="JP-13")
+        self.assertEqual(shusshin.country_code, "JP")
         self.assertEqual(shusshin.jp_prefecture, "JP-13")
 
     def test_shusshin_model_can_be_created_foreign(self) -> None:
         """Should be able to create a foreign Shusshin."""
-        shusshin = Shusshin(country="MN")
-        self.assertEqual(shusshin.country, "MN")
-        self.assertIsNone(shusshin.jp_prefecture)
+        shusshin = Shusshin(country_code="MN")
+        self.assertEqual(shusshin.country_code, "MN")
+        self.assertEqual(shusshin.jp_prefecture, "")
 
-    def test_shusshin_model_defaults_prefecture_to_none(self) -> None:
-        """jp_prefecture should default to None if not provided."""
-        shusshin = Shusshin(country="US")
-        self.assertIsNone(shusshin.jp_prefecture)
+    def test_shusshin_model_defaults_prefecture_to_empty_string(self) -> None:
+        """jp_prefecture should default to empty string if not provided."""
+        shusshin = Shusshin(country_code="US")
+        self.assertEqual(shusshin.jp_prefecture, "")
+
+
+class TestShusshinDjangoIntegration(TestCase):
+    """Integration tests for ShusshinGenerator with Django models."""
+
+    def test_generated_japanese_shusshin_is_compatible_with_django_model(
+        self,
+    ) -> None:
+        """Generator output for Japanese wrestlers matches Django model."""
+        gen = ShusshinGenerator(seed=12345)  # Different seed to avoid conflicts
+
+        # Find a Japanese wrestler from generator
+        for _ in range(100):
+            pydantic_shusshin = gen.get()
+            if pydantic_shusshin.country_code == "JP":
+                # Verify fields match Django model expectations
+                self.assertEqual(pydantic_shusshin.country_code, "JP")
+                self.assertNotEqual(pydantic_shusshin.jp_prefecture, "")
+                self.assertTrue(
+                    pydantic_shusshin.jp_prefecture.startswith("JP-")
+                )
+                self.assertEqual(len(pydantic_shusshin.jp_prefecture), 5)
+
+                # Verify we can create a Django model with this data
+                # Using get_or_create to avoid conflicts with other tests
+                django_shusshin, _ = DjangoShusshin.objects.get_or_create(
+                    country_code=pydantic_shusshin.country_code,
+                    jp_prefecture=pydantic_shusshin.jp_prefecture,
+                )
+                self.assertIsNotNone(django_shusshin.pk)
+                self.assertEqual(
+                    django_shusshin.country_code, pydantic_shusshin.country_code
+                )
+                self.assertEqual(
+                    django_shusshin.jp_prefecture,
+                    pydantic_shusshin.jp_prefecture,
+                )
+                break
+
+    def test_generated_foreign_shusshin_is_compatible_with_django_model(
+        self,
+    ) -> None:
+        """Generator output for foreign wrestlers matches Django model."""
+        gen = ShusshinGenerator(seed=67890)  # Different seed to avoid conflicts
+
+        # Find a foreign wrestler from generator
+        for _ in range(500):
+            pydantic_shusshin = gen.get()
+            if pydantic_shusshin.country_code != "JP":
+                # Verify fields match Django model expectations
+                self.assertNotEqual(pydantic_shusshin.country_code, "JP")
+                self.assertEqual(pydantic_shusshin.jp_prefecture, "")
+
+                # Verify we can create a Django model with this data
+                # Using get_or_create to avoid conflicts with other tests
+                django_shusshin, _ = DjangoShusshin.objects.get_or_create(
+                    country_code=pydantic_shusshin.country_code,
+                    jp_prefecture=pydantic_shusshin.jp_prefecture,
+                )
+                self.assertIsNotNone(django_shusshin.pk)
+                self.assertEqual(
+                    django_shusshin.country_code, pydantic_shusshin.country_code
+                )
+                self.assertEqual(django_shusshin.jp_prefecture, "")
+                break
+
+    def test_generator_output_passes_all_django_constraints(self) -> None:
+        """All generated Shusshin should pass Django model constraints."""
+        gen = ShusshinGenerator(seed=42)
+
+        # Test Japanese wrestlers
+        japanese_count = 0
+        for _ in range(1000):
+            pydantic_shusshin = gen.get()
+            if pydantic_shusshin.country_code == "JP":
+                # Must have prefecture
+                self.assertNotEqual(pydantic_shusshin.jp_prefecture, "")
+                self.assertTrue(
+                    pydantic_shusshin.jp_prefecture.startswith("JP-")
+                )
+                japanese_count += 1
+                if japanese_count >= 50:
+                    break
+
+        # Test foreign wrestlers
+        foreign_count = 0
+        for _ in range(5000):
+            pydantic_shusshin = gen.get()
+            if pydantic_shusshin.country_code != "JP":
+                # Must NOT have prefecture
+                self.assertEqual(pydantic_shusshin.jp_prefecture, "")
+                foreign_count += 1
+                if foreign_count >= 50:
+                    break
+
+    def test_generator_prefecture_codes_are_valid_enum_values(self) -> None:
+        """All generated prefecture codes should be valid enum values."""
+        gen = ShusshinGenerator(seed=42)
+
+        # Import the enum
+        from game.enums import JPPrefecture
+
+        valid_prefectures = {choice[0] for choice in JPPrefecture.choices}
+
+        # Generate many Japanese wrestlers
+        for _ in range(1000):
+            pydantic_shusshin = gen.get()
+            if pydantic_shusshin.country_code == "JP":
+                # Prefecture must be in valid enum values
+                self.assertIn(
+                    pydantic_shusshin.jp_prefecture, valid_prefectures
+                )

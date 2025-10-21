@@ -43,6 +43,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     """Admin panel configuration for :class:`game.models.GameDate`."""
 
     list_display = ("year", "month", "day")
+    list_filter = ("year", "month")
     search_fields = ("year", "month", "day")
     ordering = ("-year", "-month", "-day")
     readonly_fields = ("year", "month", "day")

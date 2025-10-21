@@ -32,6 +32,12 @@ class GameDate(models.Model):
         ordering = ["-year", "-month", "-day"]
         verbose_name = "Game Date"
         verbose_name_plural = "Game Dates"
+        indexes = [
+            models.Index(
+                fields=["-year", "-month", "-day"],
+                name="gamedate_current_date_idx",
+            ),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=Q(month__gte=1) & Q(month__lte=N_MONTHS),
