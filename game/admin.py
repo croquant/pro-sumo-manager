@@ -1,8 +1,11 @@
 """Admin configuration for the game app."""
 
-from django.contrib import admin
+from __future__ import annotations
 
-from game.models import Shikona, Shusshin
+from django.contrib import admin
+from django.http import HttpRequest
+
+from game.models import GameDate, Shikona, Shusshin
 
 
 @admin.register(Shusshin)
@@ -33,3 +36,37 @@ class ShikonaAdmin(admin.ModelAdmin[Shikona]):
     list_select_related = ("parent",)
     search_fields = ("name", "transliteration")
     ordering = ("transliteration",)
+
+
+@admin.register(GameDate)
+class GameDateAdmin(admin.ModelAdmin[GameDate]):
+    """Admin panel configuration for :class:`game.models.GameDate`."""
+
+    list_display = ("year", "month", "day")
+    search_fields = ("year", "month", "day")
+    ordering = ("-year", "-month", "-day")
+    readonly_fields = ("year", "month", "day")
+
+    def has_add_permission(
+        self,
+        request: HttpRequest,
+        obj: GameDate | None = None,
+    ) -> bool:
+        """Disable manual creation - use GameClockService instead."""
+        return False
+
+    def has_change_permission(
+        self,
+        request: HttpRequest,
+        obj: GameDate | None = None,
+    ) -> bool:
+        """Disable editing - dates are immutable."""
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: GameDate | None = None,
+    ) -> bool:
+        """Disable deletion - preserve historical record."""
+        return False
