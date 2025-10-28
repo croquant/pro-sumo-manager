@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from django.db import models
+from django.db.models import Q
 
-from game.constants import DIVISION_NAMES, DIVISION_NAMES_SHORT
+from game.enums import Division as DivisionEnum
 
 
 class Division(models.Model):
@@ -16,10 +17,14 @@ class Division(models.Model):
     has a unique level number for ordering.
     """
 
-    level = models.PositiveSmallIntegerField(primary_key=True)
+    level = models.PositiveSmallIntegerField(
+        primary_key=True,
+        help_text="Division level (1=Makuuchi/highest, 8=Banzuke-gai/lowest)",
+    )
     name = models.CharField(
-        max_length=12,
-        choices=DIVISION_NAMES,
+        max_length=2,
+        choices=DivisionEnum.choices,
+        help_text="Division short code (e.g., M=Makuuchi, J=Juryo)",
     )
 
     class Meta:
@@ -28,12 +33,20 @@ class Division(models.Model):
         ordering = ["level"]
         verbose_name = "Division"
         verbose_name_plural = "Divisions"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(level__gte=1) & Q(level__lte=8),
+                name="division_level_valid_range",
+                violation_error_message=(
+                    "Division level must be between 1 and 8."
+                ),
+            ),
+            models.UniqueConstraint(
+                fields=["name"],
+                name="unique_division_name",
+            ),
+        ]
 
     def __str__(self) -> str:
         """Return human-readable representation."""
-        return str(self.name)
-
-    @property
-    def short_name(self) -> str:
-        """Return abbreviated division name."""
-        return DIVISION_NAMES_SHORT[str(self.name)]
+        return self.get_name_display()
