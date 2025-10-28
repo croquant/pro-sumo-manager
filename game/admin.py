@@ -5,7 +5,15 @@ from __future__ import annotations
 from django.contrib import admin
 from django.http import HttpRequest
 
-from game.models import Division, GameDate, Rank, Shikona, Shusshin
+from game.models import (
+    Division,
+    GameDate,
+    Rank,
+    Rikishi,
+    RikishiStats,
+    Shikona,
+    Shusshin,
+)
 
 
 @admin.register(Shusshin)
@@ -122,3 +130,81 @@ class RankAdmin(admin.ModelAdmin[Rank]):
     def direction_name(self, obj: Rank) -> str:
         """Return the full direction name."""
         return obj.get_direction_display() if obj.direction else "-"
+
+
+@admin.register(Rikishi)
+class RikishiAdmin(admin.ModelAdmin[Rikishi]):
+    """Admin panel configuration for :class:`game.models.Rikishi`."""
+
+    list_display = (
+        "shikona_name",
+        "shusshin_display",
+        "rank_display",
+        "debut_display",
+        "intai_display",
+    )
+    list_filter = ("rank__division", "shusshin__country_code")
+    search_fields = (
+        "shikona__name",
+        "shikona__transliteration",
+    )
+    ordering = ("shikona__transliteration",)
+    list_select_related = ("shikona", "shusshin", "rank", "debut", "intai")
+
+    @admin.display(description="Shikona")
+    def shikona_name(self, obj: Rikishi) -> str:
+        """Return the wrestler's ring name."""
+        return obj.shikona.transliteration
+
+    @admin.display(description="Shusshin")
+    def shusshin_display(self, obj: Rikishi) -> str:
+        """Return the wrestler's place of origin."""
+        return str(obj.shusshin) if obj.shusshin else "-"
+
+    @admin.display(description="Rank")
+    def rank_display(self, obj: Rikishi) -> str:
+        """Return the wrestler's current rank."""
+        return str(obj.rank) if obj.rank else "-"
+
+    @admin.display(description="Debut")
+    def debut_display(self, obj: Rikishi) -> str:
+        """Return the debut date."""
+        return str(obj.debut) if obj.debut else "-"
+
+    @admin.display(description="Retirement")
+    def intai_display(self, obj: Rikishi) -> str:
+        """Return the retirement date."""
+        return str(obj.intai) if obj.intai else "-"
+
+
+@admin.register(RikishiStats)
+class RikishiStatsAdmin(admin.ModelAdmin[RikishiStats]):
+    """Admin panel configuration for :class:`game.models.RikishiStats`."""
+
+    list_display = (
+        "rikishi_name",
+        "current_stats",
+        "potential",
+        "xp",
+        "strength",
+        "technique",
+        "balance",
+        "endurance",
+        "mental",
+    )
+    search_fields = (
+        "rikishi__shikona__name",
+        "rikishi__shikona__transliteration",
+    )
+    ordering = ("rikishi__shikona__transliteration",)
+    list_select_related = ("rikishi__shikona",)
+
+    @admin.display(description="Rikishi")
+    def rikishi_name(self, obj: RikishiStats) -> str:
+        """Return the wrestler's name."""
+        return obj.rikishi.shikona.transliteration
+
+    @admin.display(description="Current/Potential")
+    def current_stats(self, obj: RikishiStats) -> str:
+        """Return current vs potential stats."""
+        return f"{obj.current}/{obj.potential}"
