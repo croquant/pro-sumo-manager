@@ -25,6 +25,11 @@ class OpenAIMockedTestRunner(DiscoverRunner):
         """Set up the test environment with OpenAI mocked globally."""
         super().setup_test_environment(**kwargs)
 
+        # Set a fake API key to prevent errors when singleton checks for it
+        import os
+
+        os.environ["OPENAI_API_KEY"] = "test-fake-key-for-testing"
+
         # Start patching OpenAI globally
         self.openai_patcher = patch("libs.singletons.openai.OpenAI")
         mock_openai_class = self.openai_patcher.start()
@@ -43,5 +48,11 @@ class OpenAIMockedTestRunner(DiscoverRunner):
         """Tear down the test environment and stop OpenAI patching."""
         # Stop the global OpenAI patch
         self.openai_patcher.stop()
+
+        # Clean up the fake API key if we set it
+        import os
+
+        if os.environ.get("OPENAI_API_KEY") == "test-fake-key-for-testing":
+            del os.environ["OPENAI_API_KEY"]
 
         super().teardown_test_environment(**kwargs)
