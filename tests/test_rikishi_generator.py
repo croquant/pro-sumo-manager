@@ -194,6 +194,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         self.assertEqual(updated.current, 30)
 
 
+@patch("libs.generators.shikona.get_openai_singleton")
 @patch("libs.generators.shikona.ShikonaGenerator._call_openai")
 class TestRikishiGenerator(unittest.TestCase):
     """Tests for the RikishiGenerator class."""
@@ -217,7 +218,7 @@ class TestRikishiGenerator(unittest.TestCase):
         mock_openai.side_effect = mock_interpretation
 
     def test_generator_with_seed_is_deterministic(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Seeded generators should produce identical rikishi."""
         self._setup_mock_openai(mock_openai)
@@ -238,7 +239,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertEqual(rikishi1.mental, rikishi2.mental)
 
     def test_different_seeds_produce_different_rikishi(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Different seeds should produce different rikishi."""
         self._setup_mock_openai(mock_openai)
@@ -260,7 +261,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertGreater(differences, 0)
 
     def test_generated_rikishi_has_all_required_fields(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generated rikishi should have all required fields populated."""
         self._setup_mock_openai(mock_openai)
@@ -278,7 +279,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertIsNotNone(rikishi.mental)
 
     def test_potential_is_within_valid_range(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generated potential should be within MIN to MAX POTENTIAL."""
         self._setup_mock_openai(mock_openai)
@@ -290,7 +291,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertLessEqual(rikishi.potential, MAX_POTENTIAL)
 
     def test_current_is_less_than_or_equal_to_potential(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Current ability should never exceed potential."""
         self._setup_mock_openai(mock_openai)
@@ -301,9 +302,9 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertLessEqual(rikishi.current, rikishi.potential)
 
     def test_current_is_within_valid_range(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
-        """Generated current should be within MIN_POTENTIAL to potential/2."""
+        """Generated current should be within MIN_POTENTIAL and potential."""
         self._setup_mock_openai(mock_openai)
         gen = RikishiGenerator(seed=42)
 
@@ -313,7 +314,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertLessEqual(rikishi.current, rikishi.potential)
 
     def test_all_stats_are_within_valid_range(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """All stats should be within MIN_STAT_VALUE to MAX_STAT_VALUE."""
         self._setup_mock_openai(mock_openai)
@@ -333,7 +334,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertLessEqual(rikishi.mental, MAX_STAT_VALUE)
 
     def test_potential_distribution_is_roughly_gaussian(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Potential follows Gaussian distribution centered on MEAN."""
         self._setup_mock_openai(mock_openai)
@@ -365,7 +366,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertLess(elite_count / len(potentials), 0.10)
 
     def test_stat_distribution_reflects_current_ability(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Higher current ability should result in higher total stats."""
         self._setup_mock_openai(mock_openai)
@@ -375,6 +376,7 @@ class TestRikishiGenerator(unittest.TestCase):
         low_ability_rikishi = []
 
         # Generate many rikishi and separate by current ability
+        # Current ability typically ranges 5-15, so use thresholds within that
         for _ in range(500):
             rikishi = gen.get()
             total_stats = (
@@ -385,9 +387,9 @@ class TestRikishiGenerator(unittest.TestCase):
                 + rikishi.mental
             )
 
-            if rikishi.current >= 40:
+            if rikishi.current >= 12:
                 high_ability_rikishi.append(total_stats)
-            elif rikishi.current <= 15:
+            elif rikishi.current <= 8:
                 low_ability_rikishi.append(total_stats)
 
         # High ability rikishi should have higher average total stats
@@ -397,7 +399,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertGreater(avg_high, avg_low)
 
     def test_stats_roughly_sum_to_current_ability(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Total stats should roughly correspond to current ability."""
         self._setup_mock_openai(mock_openai)
@@ -419,7 +421,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertEqual(total_stats, expected_total)
 
     def test_multiple_generations_produce_unique_rikishi(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generating multiple rikishi should produce different individuals."""
         self._setup_mock_openai(mock_openai)
@@ -431,16 +433,19 @@ class TestRikishiGenerator(unittest.TestCase):
         shikona_set = {r.shikona.shikona for r in rikishi_list}
         self.assertGreater(len(shikona_set), 1)
 
-    def test_stat_distribution_is_random(self, mock_openai: MagicMock) -> None:
+    def test_stat_distribution_is_random(
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
+    ) -> None:
         """Stats should be randomly distributed, not all equal."""
         self._setup_mock_openai(mock_openai)
         gen = RikishiGenerator(seed=42)
 
         # Generate rikishi with enough points to distribute
+        # Current typically ranges 5-15, so look for current > 8
         found_unequal = False
         for _ in range(100):
             rikishi = gen.get()
-            if rikishi.current > 20:  # Need enough points for variation
+            if rikishi.current > 8:  # Need enough points for variation
                 stats = [
                     rikishi.strength,
                     rikishi.technique,
@@ -456,7 +461,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertTrue(found_unequal, "Stats should not all be equal")
 
     def test_edge_case_minimum_current_ability(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generator should handle minimum current ability (5) correctly."""
         self._setup_mock_openai(mock_openai)
@@ -475,16 +480,17 @@ class TestRikishiGenerator(unittest.TestCase):
                 break
 
     def test_edge_case_high_current_ability(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generator should handle high current ability correctly."""
         self._setup_mock_openai(mock_openai)
         gen = RikishiGenerator(seed=42)
 
         # Generate many to find one with high current
+        # Current typically ranges 5-15, so look for >= 12
         for _ in range(1000):
             rikishi = gen.get()
-            if rikishi.current >= 50:
+            if rikishi.current >= 12:
                 # Stats should not exceed maximum
                 self.assertLessEqual(rikishi.strength, MAX_STAT_VALUE)
                 self.assertLessEqual(rikishi.technique, MAX_STAT_VALUE)
@@ -494,7 +500,7 @@ class TestRikishiGenerator(unittest.TestCase):
                 break
 
     def test_generated_shikona_has_required_fields(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generated shikona should have all required fields."""
         self._setup_mock_openai(mock_openai)
@@ -509,7 +515,7 @@ class TestRikishiGenerator(unittest.TestCase):
         self.assertGreater(len(rikishi.shikona.interpretation), 0)
 
     def test_generated_shusshin_has_valid_country_code(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Generated shusshin should have a valid country code."""
         self._setup_mock_openai(mock_openai)
@@ -522,7 +528,7 @@ class TestRikishiGenerator(unittest.TestCase):
             self.assertTrue(rikishi.shusshin.country_code.isupper())
 
     def test_japanese_rikishi_have_prefecture(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Japanese rikishi should have prefecture set."""
         self._setup_mock_openai(mock_openai)
@@ -538,7 +544,7 @@ class TestRikishiGenerator(unittest.TestCase):
                 break
 
     def test_foreign_rikishi_have_no_prefecture(
-        self, mock_openai: MagicMock
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
     ) -> None:
         """Foreign rikishi should not have prefecture set."""
         self._setup_mock_openai(mock_openai)
