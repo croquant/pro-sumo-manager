@@ -139,3 +139,7 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Test runner configuration
+# Use custom test runner that mocks OpenAI globally to prevent real API calls
+TEST_RUNNER = "tests.runner.OpenAIMockedTestRunner"

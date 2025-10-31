@@ -259,6 +259,69 @@ class TestShusshinPydanticModel(unittest.TestCase):
         shusshin = Shusshin(country_code="US")
         self.assertEqual(shusshin.jp_prefecture, "")
 
+    def test_str_returns_prefecture_name_for_japanese(self) -> None:
+        """__str__ should return 'Prefecture, Japan' for Japanese wrestlers."""
+        shusshin = Shusshin(country_code="JP", jp_prefecture="JP-13")
+        result = str(shusshin)
+        self.assertIn("Japan", result)
+        self.assertIn("Tokyo", result)  # JP-13 is Tokyo
+
+    def test_str_returns_country_name_for_foreign(self) -> None:
+        """__str__ should return country name for foreign wrestlers."""
+        shusshin = Shusshin(country_code="MN")
+        result = str(shusshin)
+        self.assertEqual(result, "Mongolia")
+
+    def test_str_returns_different_prefecture_names(self) -> None:
+        """__str__ returns different prefecture names for different codes."""
+        tokyo = Shusshin(country_code="JP", jp_prefecture="JP-13")
+        osaka = Shusshin(country_code="JP", jp_prefecture="JP-27")
+
+        self.assertIn("Tokyo", str(tokyo))
+        self.assertIn("Osaka", str(osaka))
+        self.assertNotEqual(str(tokyo), str(osaka))
+
+    def test_str_handles_various_countries(self) -> None:
+        """__str__ should handle various foreign countries."""
+        test_cases = [
+            ("MN", "Mongolia"),
+            ("US", "United States"),
+            ("RU", "Russian Federation"),
+            ("GE", "Georgia"),
+            ("BG", "Bulgaria"),
+        ]
+
+        for country_code, expected_name in test_cases:
+            with self.subTest(country_code=country_code):
+                shusshin = Shusshin(country_code=country_code)
+                result = str(shusshin)
+                self.assertEqual(result, expected_name)
+
+    def test_str_fallback_to_code_if_pycountry_fails(self) -> None:
+        """__str__ should fallback to code if pycountry lookup fails."""
+        # Use an invalid but properly formatted code
+        shusshin = Shusshin(country_code="XX")
+        result = str(shusshin)
+        # Should return the code itself as fallback
+        self.assertEqual(result, "XX")
+
+    def test_str_format_for_all_prefectures(self) -> None:
+        """__str__ should work for all valid prefecture codes."""
+        # Test a sample of prefectures
+        sample_prefectures = ["JP-01", "JP-13", "JP-27", "JP-40", "JP-47"]
+
+        for pref_code in sample_prefectures:
+            with self.subTest(prefecture=pref_code):
+                shusshin = Shusshin(country_code="JP", jp_prefecture=pref_code)
+                result = str(shusshin)
+                # Should contain "Japan" and some prefecture name
+                self.assertIn("Japan", result)
+                self.assertIn(",", result)
+                # Format should be "Prefecture, Japan"
+                parts = result.split(", ")
+                self.assertEqual(len(parts), 2)
+                self.assertEqual(parts[1], "Japan")
+
 
 class TestShusshinDjangoIntegration(TestCase):
     """Integration tests for ShusshinGenerator with Django models."""
