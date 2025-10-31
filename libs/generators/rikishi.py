@@ -104,25 +104,25 @@ class RikishiGenerator:
         """
         Generate current ability based on potential.
 
-        All recruits start with low ability (5-12 base), with a small hint
-        of their potential (+/- ~1.5 points). This creates:
-        - Equal starting conditions for most recruits
-        - Hidden talent that rewards scouting
-        - Slight correlation with potential for realism
+        All recruits start with low ability (5-12 base), with a visible hint
+        of their potential (+/- ~6 points). This creates:
+        - Meaningful differentiation between recruits
+        - Talent is more visible but still requires development
+        - Strong correlation with potential for better player feedback
 
         Args:
             potential: The rikishi's potential ability score.
 
         Returns:
-            Current ability score (typically 5-15), always <= potential.
+            Current ability score (typically 5-18), always <= potential.
 
         """
         # Base ability: all recruits start relatively weak
         base = self.random.uniform(5, 12)
 
-        # Small bonus/penalty based on deviation from mean potential
-        # High potential (70): +2 bonus, Low potential (10): -1 penalty
-        bonus = (potential - MEAN_POTENTIAL) * 0.05
+        # Moderate bonus/penalty based on deviation from mean potential
+        # High potential (70): +6 bonus, Low potential (10): -3 penalty
+        bonus = (potential - MEAN_POTENTIAL) * 0.15
 
         current = round(max(MIN_POTENTIAL, base + bonus))
 
