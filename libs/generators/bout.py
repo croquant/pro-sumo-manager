@@ -131,7 +131,7 @@ class BoutGenerator:
         input_data = BoutGeneratorInput(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
-            fortune=[self.random.randint(0, 13) for _ in range(FORTUNE_COUNT)],
+            fortune=self._generate_fortune(),
         )
 
         input_list = [
@@ -156,3 +156,25 @@ class BoutGenerator:
             raise ValueError("Failed to parse bout generation response")
 
         return result
+
+    def _generate_fortune(self) -> list[int]:
+        """
+        Generate a list of fortune values including criticals.
+
+        Returns:
+            A list of integers representing fortune values.
+
+        """
+        fortune_values = []
+        for _ in range(FORTUNE_COUNT):
+            roll = self.random.random()
+            if roll < 0.02:
+                # Critical Success (2%)
+                fortune_values.append(20)
+            elif roll < 0.04:
+                # Critical Fail (2%)
+                fortune_values.append(-5)
+            else:
+                # Normal range (96%)
+                fortune_values.append(self.random.randint(0, 13))
+        return fortune_values

@@ -370,8 +370,8 @@ class TestBoutGenerator(unittest.TestCase):
         gen2 = BoutGenerator(seed=42)
 
         # Both generators should produce same fortune sequence
-        fortune1 = [gen1.random.randint(0, 13) for _ in range(5)]
-        fortune2 = [gen2.random.randint(0, 13) for _ in range(5)]
+        fortune1 = gen1._generate_fortune()
+        fortune2 = gen2._generate_fortune()
 
         self.assertEqual(fortune1, fortune2)
 
@@ -507,10 +507,14 @@ class TestBoutGenerator(unittest.TestCase):
         self.assertIn("fortune", input_data)
         self.assertIsInstance(input_data["fortune"], list)
         self.assertEqual(len(input_data["fortune"]), 5)
-        # Fortune values should be in range 0-13
+        # Fortune values should be in valid range
+        # (0-13 normal, -5 critical fail, 20 critical success)
         for value in input_data["fortune"]:
-            self.assertGreaterEqual(value, 0)
-            self.assertLessEqual(value, 13)
+            self.assertIn(
+                value,
+                list(range(0, 14)) + [-5, 20],
+                f"Fortune value {value} not in valid range",
+            )
 
     def test_generate_raises_error_when_parsing_fails(self) -> None:
         """Should raise ValueError when API response cannot be parsed."""
@@ -552,8 +556,8 @@ class TestBoutGenerator(unittest.TestCase):
         gen1 = BoutGenerator(seed=42)
         gen2 = BoutGenerator(seed=100)
 
-        fortune1 = [gen1.random.randint(0, 13) for _ in range(5)]
-        fortune2 = [gen2.random.randint(0, 13) for _ in range(5)]
+        fortune1 = gen1._generate_fortune()
+        fortune2 = gen2._generate_fortune()
 
         # At least some values should be different
         self.assertNotEqual(fortune1, fortune2)
@@ -664,26 +668,70 @@ class TestBoutGenerator(unittest.TestCase):
         self.assertIsInstance(result, BoutGeneratorOutput)
 
     def test_fortune_generation_produces_expected_range(self) -> None:
-        """Generated fortune values should be in range 0-13."""
+        """Fortune values should include normal range and criticals."""
         gen = BoutGenerator(seed=42)
 
         # Generate many fortune sequences
         for _ in range(100):
-            fortune = [gen.random.randint(0, 13) for _ in range(5)]
+            fortune = gen._generate_fortune()
+            self.assertEqual(len(fortune), 5)
             for value in fortune:
-                self.assertGreaterEqual(value, 0)
-                self.assertLessEqual(value, 13)
+                # Values should be in normal range (0-13) or critical
+                # values (-5, 20)
+                self.assertIn(
+                    value,
+                    list(range(0, 14)) + [-5, 20],
+                    f"Fortune value {value} not in valid range",
+                )
 
     def test_generator_uses_same_seed_for_fortune(self) -> None:
         """Generator should use consistent seed for fortune generation."""
         gen = BoutGenerator(seed=42)
 
         # Generate two fortune sequences
-        fortune1 = [gen.random.randint(0, 13) for _ in range(5)]
+        fortune1 = gen._generate_fortune()
 
         # Reset generator with same seed
         gen2 = BoutGenerator(seed=42)
-        fortune2 = [gen2.random.randint(0, 13) for _ in range(5)]
+        fortune2 = gen2._generate_fortune()
 
         # Should match
         self.assertEqual(fortune1, fortune2)
+
+    def test_fortune_generation_can_produce_criticals(self) -> None:
+        """Fortune generation should occasionally produce critical values."""
+        gen = BoutGenerator(seed=12345)
+
+        # Generate many fortune values to check if criticals appear
+        all_values = []
+        for _ in range(500):
+            fortune = gen._generate_fortune()
+            all_values.extend(fortune)
+
+        # With 2500 values total (500 * 5), we should see some criticals
+        # At 2% for each critical type, we expect ~50 of each
+        has_critical_success = 20 in all_values
+        has_critical_fail = -5 in all_values
+
+        self.assertTrue(
+            has_critical_success,
+            "Critical success (20) should appear with enough samples",
+        )
+        self.assertTrue(
+            has_critical_fail,
+            "Critical fail (-5) should appear with enough samples",
+        )
+
+    def test_fortune_generation_returns_correct_count(self) -> None:
+        """Fortune generation returns exactly FORTUNE_COUNT values."""
+        from libs.generators.bout import FORTUNE_COUNT
+
+        gen = BoutGenerator(seed=999)
+
+        for _ in range(50):
+            fortune = gen._generate_fortune()
+            self.assertEqual(
+                len(fortune),
+                FORTUNE_COUNT,
+                f"Expected {FORTUNE_COUNT} fortune values, got {len(fortune)}",
+            )
