@@ -160,7 +160,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="north",  # type: ignore[arg-type]
-                commentary=["Line 1"],
+                commentary=["Line 1", "Line 2", "Line 3"],
                 kimarite="yorikiri",
                 excitement_level=5.0,
                 east_xp_gain=10,
@@ -175,7 +175,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
         valid_output = BoutGeneratorOutput(
             thinking="Analysis",
             winner="west",
-            commentary=["Victory"],
+            commentary=["Start", "Middle", "Victory"],
             kimarite="uwatenage",
             excitement_level=8.0,
             east_xp_gain=10,
@@ -188,7 +188,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="invalid_technique",  # type: ignore[arg-type]
                 excitement_level=5.0,
                 east_xp_gain=10,
@@ -204,7 +204,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             output = BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="yorikiri",
                 excitement_level=level,
                 east_xp_gain=10,
@@ -217,7 +217,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="yorikiri",
                 excitement_level=0.5,
                 east_xp_gain=10,
@@ -229,7 +229,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="yorikiri",
                 excitement_level=10.5,
                 east_xp_gain=10,
@@ -244,7 +244,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
         output = BoutGeneratorOutput(
             thinking="Analysis",
             winner="east",
-            commentary=["Victory"],
+            commentary=["Start", "Middle", "Victory"],
             kimarite="yorikiri",
             excitement_level=5.0,
             east_xp_gain=0,
@@ -258,7 +258,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="yorikiri",
                 excitement_level=5.0,
                 east_xp_gain=-5,
@@ -270,7 +270,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             BoutGeneratorOutput(
                 thinking="Analysis",
                 winner="east",
-                commentary=["Victory"],
+                commentary=["Start", "Middle", "Victory"],
                 kimarite="yorikiri",
                 excitement_level=5.0,
                 east_xp_gain=10,
@@ -328,7 +328,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
                 output = BoutGeneratorOutput(
                     thinking="Analysis",
                     winner="east",
-                    commentary=["Victory"],
+                    commentary=["Start", "Middle", "Victory"],
                     kimarite=technique,  # type: ignore[arg-type]
                     excitement_level=5.0,
                     east_xp_gain=10,

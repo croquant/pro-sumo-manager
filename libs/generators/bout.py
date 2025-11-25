@@ -13,6 +13,7 @@ from libs.singletons.openai import get_openai_singleton
 logger = logging.getLogger(__name__)
 
 DIRNAME: Final[str] = os.path.dirname(__file__)
+FORTUNE_COUNT: Final[int] = 5  # Number of fortune rolls for bout simulation
 
 
 class BoutGeneratorInput(BaseModel):
@@ -42,7 +43,9 @@ class BoutGeneratorOutput(BaseModel):
         ..., description="The winner of the bout"
     )
     commentary: list[str] = Field(
-        ..., description="A list of commentary lines describing the bout"
+        ...,
+        description="A list of commentary lines describing the bout",
+        min_length=3,
     )
     kimarite: Literal[
         "yorikiri",
@@ -128,7 +131,7 @@ class BoutGenerator:
         input_data = BoutGeneratorInput(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
-            fortune=[self.random.randint(0, 13) for _ in range(5)],
+            fortune=[self.random.randint(0, 13) for _ in range(FORTUNE_COUNT)],
         )
 
         input_list = [
