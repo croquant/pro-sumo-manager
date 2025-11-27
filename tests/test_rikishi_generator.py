@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from libs.generators.rikishi import (
+from libs.constants import (
     MAX_POTENTIAL,
     MAX_STAT_VALUE,
     MEAN_POTENTIAL,
@@ -13,6 +13,8 @@ from libs.generators.rikishi import (
     MIN_STAT_VALUE,
     NUM_STATS,
     SIGMA_POTENTIAL,
+)
+from libs.generators.rikishi import (
     GeneratedRikishi,
     RikishiGenerator,
 )
