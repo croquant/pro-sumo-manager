@@ -29,7 +29,7 @@ def unpopulate_shusshin(
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("game", "0002_shusshin_unique_shusshin_country_except_japan_and_more"),
+        ("game", "0001_initial"),
     ]
 
     operations = [

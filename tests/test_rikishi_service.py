@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from game.constants import MAX_STAT_VALUE
-from game.models import Rikishi, RikishiStats, Shikona, Shusshin
+from game.models import Rikishi, Shikona, Shusshin
 from game.services import RikishiService
 
 
@@ -27,15 +27,10 @@ class RikishiServiceTests(TestCase):
             country_code="MN",
         )
 
-        # Create a rikishi
+        # Create a rikishi with stats
         self.rikishi = Rikishi.objects.create(
             shikona=self.shikona,
             shusshin=self.shusshin,
-        )
-
-        # Create stats for the rikishi
-        self.stats = RikishiStats.objects.create(
-            rikishi=self.rikishi,
             potential=50,
             xp=0,
             strength=5,
@@ -47,125 +42,125 @@ class RikishiServiceTests(TestCase):
 
     def test_increase_random_stats_basic(self) -> None:
         """Should increase stats by the specified amount."""
-        initial_total = self.stats.current
-        RikishiService.increase_random_stats(self.stats, amount=5)
+        initial_total = self.rikishi.current
+        RikishiService.increase_random_stats(self.rikishi, amount=5)
 
-        self.stats.refresh_from_db()
-        self.assertEqual(self.stats.current, initial_total + 5)
+        self.rikishi.refresh_from_db()
+        self.assertEqual(self.rikishi.current, initial_total + 5)
 
     def test_increase_random_stats_respects_potential(self) -> None:
         """Should not exceed potential when increasing stats."""
         # Set stats close to potential
-        self.stats.strength = 10
-        self.stats.technique = 10
-        self.stats.balance = 10
-        self.stats.endurance = 10
-        self.stats.mental = 9  # Total = 49, potential = 50
-        self.stats.save()
+        self.rikishi.strength = 10
+        self.rikishi.technique = 10
+        self.rikishi.balance = 10
+        self.rikishi.endurance = 10
+        self.rikishi.mental = 9  # Total = 49, potential = 50
+        self.rikishi.save()
 
         # Try to add 5 points, but only 1 should be added
-        RikishiService.increase_random_stats(self.stats, amount=5)
+        RikishiService.increase_random_stats(self.rikishi, amount=5)
 
-        self.stats.refresh_from_db()
-        self.assertEqual(self.stats.current, 50)  # Should be at potential
+        self.rikishi.refresh_from_db()
+        self.assertEqual(self.rikishi.current, 50)  # Should be at potential
 
     def test_increase_random_stats_respects_max_stat_value(self) -> None:
         """Should not exceed MAX_STAT_VALUE for any individual stat."""
         # Set one stat to max
-        self.stats.strength = MAX_STAT_VALUE
-        self.stats.technique = 5
-        self.stats.balance = 5
-        self.stats.endurance = 5
-        self.stats.mental = 5
-        self.stats.potential = 100  # Max allowed by constraint
-        self.stats.save()
+        self.rikishi.strength = MAX_STAT_VALUE
+        self.rikishi.technique = 5
+        self.rikishi.balance = 5
+        self.rikishi.endurance = 5
+        self.rikishi.mental = 5
+        self.rikishi.potential = 100  # Max allowed by constraint
+        self.rikishi.save()
 
         # Increase stats many times
         for _ in range(100):
-            RikishiService.increase_random_stats(self.stats, amount=1)
+            RikishiService.increase_random_stats(self.rikishi, amount=1)
 
-        self.stats.refresh_from_db()
+        self.rikishi.refresh_from_db()
         # Strength should still be at max
-        self.assertEqual(self.stats.strength, MAX_STAT_VALUE)
+        self.assertEqual(self.rikishi.strength, MAX_STAT_VALUE)
         # Other stats should have increased
-        self.assertGreater(self.stats.technique, 5)
+        self.assertGreater(self.rikishi.technique, 5)
 
     def test_increase_random_stats_all_stats_maxed(self) -> None:
         """Should handle case where all stats are maxed out."""
         # Set all stats to max
-        self.stats.strength = MAX_STAT_VALUE
-        self.stats.technique = MAX_STAT_VALUE
-        self.stats.balance = MAX_STAT_VALUE
-        self.stats.endurance = MAX_STAT_VALUE
-        self.stats.mental = MAX_STAT_VALUE
-        self.stats.potential = 100  # Max allowed by constraint
-        self.stats.save()
+        self.rikishi.strength = MAX_STAT_VALUE
+        self.rikishi.technique = MAX_STAT_VALUE
+        self.rikishi.balance = MAX_STAT_VALUE
+        self.rikishi.endurance = MAX_STAT_VALUE
+        self.rikishi.mental = MAX_STAT_VALUE
+        self.rikishi.potential = 100  # Max allowed by constraint
+        self.rikishi.save()
 
-        initial_total = self.stats.current
+        initial_total = self.rikishi.current
 
         # Try to increase stats
-        RikishiService.increase_random_stats(self.stats, amount=10)
+        RikishiService.increase_random_stats(self.rikishi, amount=10)
 
-        self.stats.refresh_from_db()
+        self.rikishi.refresh_from_db()
         # Stats should not have changed
-        self.assertEqual(self.stats.current, initial_total)
+        self.assertEqual(self.rikishi.current, initial_total)
 
     def test_increase_random_stats_zero_amount(self) -> None:
         """Should handle zero amount gracefully."""
-        initial_total = self.stats.current
-        RikishiService.increase_random_stats(self.stats, amount=0)
+        initial_total = self.rikishi.current
+        RikishiService.increase_random_stats(self.rikishi, amount=0)
 
-        self.stats.refresh_from_db()
-        self.assertEqual(self.stats.current, initial_total)
+        self.rikishi.refresh_from_db()
+        self.assertEqual(self.rikishi.current, initial_total)
 
     def test_increase_random_stats_saves_to_database(self) -> None:
         """Should persist changes to the database."""
-        initial_total = self.stats.current
-        RikishiService.increase_random_stats(self.stats, amount=3)
+        initial_total = self.rikishi.current
+        RikishiService.increase_random_stats(self.rikishi, amount=3)
 
         # Fetch fresh from database
-        fresh_stats = RikishiStats.objects.get(rikishi=self.rikishi)
-        self.assertEqual(fresh_stats.current, initial_total + 3)
+        fresh_rikishi = Rikishi.objects.get(pk=self.rikishi.pk)
+        self.assertEqual(fresh_rikishi.current, initial_total + 3)
 
     def test_increase_random_stats_validates_before_saving(self) -> None:
         """Should validate stats don't exceed potential before saving."""
         # Manually set stats to exceed potential (bypassing normal validation)
-        self.stats.strength = 20
-        self.stats.technique = 20
-        self.stats.balance = 20
-        self.stats.endurance = 20
-        self.stats.mental = 20
+        self.rikishi.strength = 20
+        self.rikishi.technique = 20
+        self.rikishi.balance = 20
+        self.rikishi.endurance = 20
+        self.rikishi.mental = 20
         # current = 100, but potential = 50
 
         # This should raise ValidationError when trying to save
         with self.assertRaises(ValidationError):
-            RikishiService.increase_random_stats(self.stats, amount=0)
+            RikishiService.increase_random_stats(self.rikishi, amount=0)
 
     def test_increase_random_stats_distributes_randomly(self) -> None:
         """Should distribute points across different stats (probabilistic)."""
         # Reset to base stats
-        self.stats.strength = 1
-        self.stats.technique = 1
-        self.stats.balance = 1
-        self.stats.endurance = 1
-        self.stats.mental = 1
-        self.stats.potential = 100
-        self.stats.save()
+        self.rikishi.strength = 1
+        self.rikishi.technique = 1
+        self.rikishi.balance = 1
+        self.rikishi.endurance = 1
+        self.rikishi.mental = 1
+        self.rikishi.potential = 100
+        self.rikishi.save()
 
         # Add many points
-        RikishiService.increase_random_stats(self.stats, amount=20)
+        RikishiService.increase_random_stats(self.rikishi, amount=20)
 
-        self.stats.refresh_from_db()
+        self.rikishi.refresh_from_db()
 
         # At least 3 different stats should have increased
         # (with 20 points distributed randomly, very unlikely to hit 1-2)
         stats_increased = sum(
             [
-                self.stats.strength > 1,
-                self.stats.technique > 1,
-                self.stats.balance > 1,
-                self.stats.endurance > 1,
-                self.stats.mental > 1,
+                self.rikishi.strength > 1,
+                self.rikishi.technique > 1,
+                self.rikishi.balance > 1,
+                self.rikishi.endurance > 1,
+                self.rikishi.mental > 1,
             ]
         )
         self.assertGreaterEqual(stats_increased, 3)
@@ -319,10 +314,6 @@ class RikishiValidationTests(TestCase):
 
         self.assertEqual(str(rikishi), "Mitakeumi")
 
-
-class RikishiStatsValidationTests(TestCase):
-    """Test suite for RikishiStats validation in service layer."""
-
     def test_validate_stats_within_potential_passes(self) -> None:
         """Should pass validation when stats are within potential."""
         shikona = Shikona.objects.create(
@@ -331,10 +322,8 @@ class RikishiStatsValidationTests(TestCase):
             interpretation="Crane Dragon",
         )
 
-        rikishi = RikishiService.create_rikishi(shikona=shikona)
-
-        stats = RikishiService.create_rikishi_stats(
-            rikishi=rikishi,
+        rikishi = RikishiService.create_rikishi(
+            shikona=shikona,
             potential=50,
             strength=8,
             technique=9,
@@ -344,7 +333,7 @@ class RikishiStatsValidationTests(TestCase):
         )
 
         # Should not raise
-        RikishiService.validate_stats_within_potential(stats)
+        RikishiService.validate_stats_within_potential(rikishi)
 
     def test_validate_stats_exceed_potential_raises(self) -> None:
         """Should raise ValidationError when stats exceed potential."""
@@ -354,11 +343,9 @@ class RikishiStatsValidationTests(TestCase):
             interpretation="Strong Glory Path",
         )
 
-        rikishi = RikishiService.create_rikishi(shikona=shikona)
-
-        # Create stats with low potential
-        stats = RikishiService.create_rikishi_stats(
-            rikishi=rikishi,
+        # Create with valid stats first
+        rikishi = RikishiService.create_rikishi(
+            shikona=shikona,
             potential=10,
             strength=2,
             technique=2,
@@ -368,19 +355,19 @@ class RikishiStatsValidationTests(TestCase):
         )
 
         # Manually exceed potential (bypassing validation)
-        stats.strength = 10
-        stats.technique = 10
-        stats.balance = 10
-        stats.endurance = 10
-        stats.mental = 10
+        rikishi.strength = 10
+        rikishi.technique = 10
+        rikishi.balance = 10
+        rikishi.endurance = 10
+        rikishi.mental = 10
         # current = 50, potential = 10
 
         with self.assertRaises(ValidationError) as cm:
-            RikishiService.validate_stats_within_potential(stats)
+            RikishiService.validate_stats_within_potential(rikishi)
 
         self.assertIn("cannot exceed potential", str(cm.exception))
 
-    def test_create_rikishi_stats_with_invalid_total_raises(self) -> None:
+    def test_create_rikishi_with_invalid_total_raises(self) -> None:
         """Should raise ValidationError when creating with invalid total."""
         shikona = Shikona.objects.create(
             name="照ノ富士",
@@ -388,11 +375,9 @@ class RikishiStatsValidationTests(TestCase):
             interpretation="Shining Fuji",
         )
 
-        rikishi = RikishiService.create_rikishi(shikona=shikona)
-
         with self.assertRaises(ValidationError):
-            RikishiService.create_rikishi_stats(
-                rikishi=rikishi,
+            RikishiService.create_rikishi(
+                shikona=shikona,
                 potential=10,
                 strength=5,
                 technique=5,
@@ -401,33 +386,3 @@ class RikishiStatsValidationTests(TestCase):
                 mental=5,
                 # Total = 25, potential = 10 -> should raise
             )
-
-    def test_str_representation(self) -> None:
-        """Should return formatted stats display."""
-        shikona = Shikona.objects.create(
-            name="高安",
-            transliteration="Takayasu",
-            interpretation="High Peace",
-        )
-
-        rikishi = RikishiService.create_rikishi(shikona=shikona)
-
-        stats = RikishiService.create_rikishi_stats(
-            rikishi=rikishi,
-            potential=50,
-            xp=100,
-            strength=8,
-            technique=9,
-            balance=7,
-            endurance=6,
-            mental=10,
-        )
-
-        str_repr = str(stats)
-        self.assertIn("Potential: 40/50", str_repr)
-        self.assertIn("XP: 100", str_repr)
-        self.assertIn("Strength: 8", str_repr)
-        self.assertIn("Technique: 9", str_repr)
-        self.assertIn("Balance: 7", str_repr)
-        self.assertIn("Endurance: 6", str_repr)
-        self.assertIn("Mental: 10", str_repr)

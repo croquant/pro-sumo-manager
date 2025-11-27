@@ -10,7 +10,6 @@ from game.models import (
     GameDate,
     Rank,
     Rikishi,
-    RikishiStats,
     Shikona,
     Shusshin,
 )
@@ -142,6 +141,9 @@ class RikishiAdmin(admin.ModelAdmin[Rikishi]):
         "rank_display",
         "debut_display",
         "intai_display",
+        "current_stats",
+        "potential",
+        "xp",
     )
     list_filter = ("rank__division", "shusshin__country_code")
     search_fields = (
@@ -176,35 +178,7 @@ class RikishiAdmin(admin.ModelAdmin[Rikishi]):
         """Return the retirement date."""
         return str(obj.intai) if obj.intai else "-"
 
-
-@admin.register(RikishiStats)
-class RikishiStatsAdmin(admin.ModelAdmin[RikishiStats]):
-    """Admin panel configuration for :class:`game.models.RikishiStats`."""
-
-    list_display = (
-        "rikishi_name",
-        "current_stats",
-        "potential",
-        "xp",
-        "strength",
-        "technique",
-        "balance",
-        "endurance",
-        "mental",
-    )
-    search_fields = (
-        "rikishi__shikona__name",
-        "rikishi__shikona__transliteration",
-    )
-    ordering = ("rikishi__shikona__transliteration",)
-    list_select_related = ("rikishi__shikona",)
-
-    @admin.display(description="Rikishi")
-    def rikishi_name(self, obj: RikishiStats) -> str:
-        """Return the wrestler's name."""
-        return obj.rikishi.shikona.transliteration
-
     @admin.display(description="Current/Potential")
-    def current_stats(self, obj: RikishiStats) -> str:
+    def current_stats(self, obj: Rikishi) -> str:
         """Return current vs potential stats."""
         return f"{obj.current}/{obj.potential}"
