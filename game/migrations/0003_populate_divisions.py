@@ -43,7 +43,7 @@ def unpopulate_divisions(
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('game', '0012_update_division_model_with_enum'),
+        ('game', '0002_populate_shusshin'),
     ]
 
     operations = [
