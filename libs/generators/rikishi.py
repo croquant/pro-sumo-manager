@@ -1,23 +1,21 @@
 """Generator for complete rikishi (wrestlers) with stats and background."""
 
 import random
-from typing import Final, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from libs.constants import (
+    MAX_POTENTIAL,
+    MAX_STAT_VALUE,
+    MEAN_POTENTIAL,
+    MIN_POTENTIAL,
+    MIN_STAT_VALUE,
+    NUM_STATS,
+    SIGMA_POTENTIAL,
+)
 from libs.generators.shikona import ShikonaGenerator, ShikonaInterpretation
 from libs.generators.shusshin import Shusshin, ShusshinGenerator
-
-# Ability constants (overall power level)
-MIN_POTENTIAL: Final[int] = 5
-MEAN_POTENTIAL: Final[int] = 30  # Mean for Gaussian distribution
-SIGMA_POTENTIAL: Final[int] = 20  # Standard deviation for Gaussian distribution
-MAX_POTENTIAL: Final[int] = 100
-
-# Individual stat constants
-MIN_STAT_VALUE: Final[int] = 1
-MAX_STAT_VALUE: Final[int] = 20
-NUM_STATS: Final[int] = 5  # strength, technique, balance, endurance, mental
 
 # Type alias for stat names
 StatName = Literal["strength", "technique", "balance", "endurance", "mental"]

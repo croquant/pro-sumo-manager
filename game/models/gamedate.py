@@ -5,7 +5,7 @@ from __future__ import annotations
 from django.db import models
 from django.db.models import Q
 
-from game.constants import N_DAYS, N_MONTHS
+from libs.constants import N_DAYS, N_MONTHS
 
 
 class GameDate(models.Model):

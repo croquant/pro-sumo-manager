@@ -5,12 +5,12 @@ from __future__ import annotations
 from django.db import models
 from django.db.models import Q
 
-from game.constants import MAX_STAT_VALUE
 from game.models.gamedate import GameDate
 from game.models.heya import Heya
 from game.models.rank import Rank
 from game.models.shikona import Shikona
 from game.models.shusshin import Shusshin
+from libs.constants import MAX_STAT_VALUE
 
 
 class Rikishi(models.Model):

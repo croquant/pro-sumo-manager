@@ -5,9 +5,9 @@ from __future__ import annotations
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from game.constants import MAX_STAT_VALUE
 from game.models import Rikishi, Shikona, Shusshin
 from game.services import RikishiService
+from libs.constants import MAX_STAT_VALUE
 
 
 class RikishiServiceTests(TestCase):
