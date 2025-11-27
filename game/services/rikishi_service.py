@@ -7,7 +7,6 @@ import random
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from game.constants import MAX_STAT_VALUE
 from game.models import (
     GameDate,
     Rank,
@@ -15,6 +14,7 @@ from game.models import (
     Shikona,
     Shusshin,
 )
+from libs.constants import MAX_STAT_VALUE
 
 
 class RikishiService:

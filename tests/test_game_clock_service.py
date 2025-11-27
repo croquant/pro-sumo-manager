@@ -3,9 +3,9 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from game.constants import N_DAYS, N_MONTHS
 from game.models import GameDate
 from game.services import GameClockService
+from libs.constants import N_DAYS, N_MONTHS
 
 
 class GameClockServiceTests(TestCase):
