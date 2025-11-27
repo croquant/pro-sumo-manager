@@ -6,22 +6,13 @@ import logging
 import os
 from typing import Final
 
-from pydantic import BaseModel
-
 from libs.generators.name import RikishiNameGenerator
 from libs.singletons.openai import get_openai_singleton
+from libs.types.shikona import Shikona
 
 logger = logging.getLogger(__name__)
 
 DIRNAME: Final[str] = os.path.dirname(__file__)
-
-
-class ShikonaInterpretation(BaseModel):
-    """Structured response for a single shikona interpretation from OpenAI."""
-
-    shikona: str
-    transliteration: str
-    interpretation: str
 
 
 class ShikonaGenerationError(Exception):
@@ -65,7 +56,7 @@ class ShikonaGenerator:
         kanji_name: str,
         parent_shikona: str | None = None,
         shusshin: str | None = None,
-    ) -> ShikonaInterpretation:
+    ) -> Shikona:
         """
         Call OpenAI API to get romanization and interpretation for a kanji name.
 
@@ -75,7 +66,7 @@ class ShikonaGenerator:
             shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
-            ShikonaInterpretation with romanization and interpretation.
+            Shikona with romanization and interpretation.
 
         Raises:
             ShikonaGenerationError: If the API call fails.
@@ -100,10 +91,10 @@ class ShikonaGenerator:
                     {"role": "system", "content": self._system_prompt},
                     {"role": "user", "content": user_message},
                 ],
-                text_format=ShikonaInterpretation,
+                text_format=Shikona,
             )
             logger.info("OpenAI API Usage: %s", response.usage)
-            result: ShikonaInterpretation | None = response.output_parsed
+            result: Shikona | None = response.output_parsed
             if result is None:
                 raise ShikonaGenerationError(
                     "OpenAI response parsing returned None"
@@ -119,7 +110,7 @@ class ShikonaGenerator:
         self,
         parent_shikona: str | None = None,
         shusshin: str | None = None,
-    ) -> ShikonaInterpretation:
+    ) -> Shikona:
         """
         Generate a single complete shikona with interpretation.
 
@@ -128,7 +119,7 @@ class ShikonaGenerator:
             shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
-            ShikonaInterpretation object.
+            Shikona object.
 
         Raises:
             ShikonaGenerationError: If generation fails.
@@ -150,7 +141,7 @@ class ShikonaGenerator:
         count: int,
         parent_shikona: str | None = None,
         shusshin: str | None = None,
-    ) -> list[ShikonaInterpretation]:
+    ) -> list[Shikona]:
         """
         Generate multiple complete shikona with interpretations.
 
@@ -160,7 +151,7 @@ class ShikonaGenerator:
             shusshin: Optional origin/birthplace to incorporate themes.
 
         Returns:
-            List of ShikonaInterpretation objects.
+            List of Shikona objects.
 
         Raises:
             ValueError: If count is not positive.
@@ -170,7 +161,7 @@ class ShikonaGenerator:
         if count <= 0:
             raise ValueError(f"count must be positive, got {count}")
 
-        all_results: list[ShikonaInterpretation] = []
+        all_results: list[Shikona] = []
         for i in range(count):
             interpretation = self.generate_single(parent_shikona, shusshin)
 

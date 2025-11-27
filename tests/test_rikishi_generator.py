@@ -1,4 +1,4 @@
-"""Tests for RikishiGenerator and GeneratedRikishi."""
+"""Tests for RikishiGenerator and Rikishi."""
 
 from __future__ import annotations
 
@@ -14,27 +14,25 @@ from libs.constants import (
     NUM_STATS,
     SIGMA_POTENTIAL,
 )
-from libs.generators.rikishi import (
-    GeneratedRikishi,
-    RikishiGenerator,
-)
-from libs.generators.shikona import ShikonaInterpretation
-from libs.generators.shusshin import Shusshin
+from libs.generators.rikishi import RikishiGenerator
+from libs.types.rikishi import Rikishi
+from libs.types.shikona import Shikona
+from libs.types.shusshin import Shusshin
 
 
-class TestGeneratedRikishiModel(unittest.TestCase):
-    """Tests for the GeneratedRikishi Pydantic model."""
+class TestRikishiModel(unittest.TestCase):
+    """Tests for the Rikishi Pydantic model."""
 
     def test_can_create_rikishi_with_all_fields(self) -> None:
         """Should be able to create a rikishi with all required fields."""
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="鶴竜",
             transliteration="Kakuryu",
             interpretation="Crane Dragon",
         )
         shusshin = Shusshin(country_code="MN")
 
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=50,
@@ -58,14 +56,14 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
     def test_stats_default_to_1(self) -> None:
         """Individual stats should default to 1 if not specified."""
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="白鵬",
             transliteration="Hakuho",
             interpretation="White Phoenix",
         )
         shusshin = Shusshin(country_code="MN")
 
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=30,
@@ -80,7 +78,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
     def test_potential_must_be_within_bounds(self) -> None:
         """Potential must be between MIN_POTENTIAL and MAX_POTENTIAL."""
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="朝青龍",
             transliteration="Asashoryu",
             interpretation="Morning Blue Dragon",
@@ -88,7 +86,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         shusshin = Shusshin(country_code="MN")
 
         # Test minimum
-        rikishi_min = GeneratedRikishi(
+        rikishi_min = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=MIN_POTENTIAL,
@@ -97,7 +95,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         self.assertEqual(rikishi_min.potential, MIN_POTENTIAL)
 
         # Test maximum
-        rikishi_max = GeneratedRikishi(
+        rikishi_max = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=MAX_POTENTIAL,
@@ -109,7 +107,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         from pydantic import ValidationError
 
         with self.assertRaises(ValidationError):
-            GeneratedRikishi(
+            Rikishi(
                 shikona=shikona,
                 shusshin=shusshin,
                 potential=MIN_POTENTIAL - 1,
@@ -118,7 +116,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
         # Test above maximum (should fail validation)
         with self.assertRaises(ValidationError):
-            GeneratedRikishi(
+            Rikishi(
                 shikona=shikona,
                 shusshin=shusshin,
                 potential=MAX_POTENTIAL + 1,
@@ -129,7 +127,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         """Individual stats must be within MIN_STAT_VALUE to MAX_STAT_VALUE."""
         from pydantic import ValidationError
 
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="稀勢の里",
             transliteration="Kisenosato",
             interpretation="Rare Village of the Hometown",
@@ -137,7 +135,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
         shusshin = Shusshin(country_code="JP", jp_prefecture="JP-08")
 
         # Test valid range
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=50,
@@ -150,7 +148,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
         # Test below minimum (should fail validation)
         with self.assertRaises(ValidationError):
-            GeneratedRikishi(
+            Rikishi(
                 shikona=shikona,
                 shusshin=shusshin,
                 potential=50,
@@ -160,7 +158,7 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
         # Test above maximum (should fail validation)
         with self.assertRaises(ValidationError):
-            GeneratedRikishi(
+            Rikishi(
                 shikona=shikona,
                 shusshin=shusshin,
                 potential=50,
@@ -170,14 +168,14 @@ class TestGeneratedRikishiModel(unittest.TestCase):
 
     def test_model_copy_creates_new_instance(self) -> None:
         """model_copy should create a new instance with updated values."""
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="照ノ富士",
             transliteration="Terunofuji",
             interpretation="Shining Fuji",
         )
         shusshin = Shusshin(country_code="MN")
 
-        original = GeneratedRikishi(
+        original = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=60,
@@ -202,16 +200,16 @@ class TestRikishiGenerator(unittest.TestCase):
     """Tests for the RikishiGenerator class."""
 
     def _setup_mock_openai(self, mock_openai: MagicMock) -> None:
-        """Configure OpenAI mock to return ShikonaInterpretation objects."""
+        """Configure OpenAI mock to return Shikona objects."""
 
         def mock_interpretation(
             kanji_name: str,
             parent_shikona: str | None = None,
             shusshin: str | None = None,
-        ) -> ShikonaInterpretation:
+        ) -> Shikona:
             # Generate consistent output based on input kanji
             # This ensures determinism for seeded tests
-            return ShikonaInterpretation(
+            return Shikona(
                 shikona=kanji_name,
                 transliteration=f"Rikishi_{hash(kanji_name) % 10000}",
                 interpretation=f"Test Wrestler {hash(kanji_name) % 100}",
@@ -565,14 +563,14 @@ class TestDistributeStatsEdgeCases(unittest.TestCase):
     def test_distribute_stats_with_zero_points(self) -> None:
         """Distributing zero points should return rikishi unchanged."""
         gen = RikishiGenerator(seed=42)
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="貴景勝",
             transliteration="Takakeisho",
             interpretation="Noble Victory",
         )
         shusshin = Shusshin(country_code="JP", jp_prefecture="JP-28")
 
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=10,
@@ -592,14 +590,14 @@ class TestDistributeStatsEdgeCases(unittest.TestCase):
     def test_distribute_stats_with_negative_points_raises_error(self) -> None:
         """Distributing negative points should raise ValueError."""
         gen = RikishiGenerator(seed=42)
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="御嶽海",
             transliteration="Mitakeumi",
             interpretation="Mount Ontake Sea",
         )
         shusshin = Shusshin(country_code="JP", jp_prefecture="JP-20")
 
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=30,
@@ -614,14 +612,14 @@ class TestDistributeStatsEdgeCases(unittest.TestCase):
     def test_distribute_stats_caps_at_maximum(self) -> None:
         """Distributing more points than possible should cap at max."""
         gen = RikishiGenerator(seed=42)
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="正代",
             transliteration="Shodai",
             interpretation="Correct Generation",
         )
         shusshin = Shusshin(country_code="JP", jp_prefecture="JP-43")
 
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=100,
@@ -653,7 +651,7 @@ class TestDistributeStatsEdgeCases(unittest.TestCase):
     def test_distribute_stats_does_not_create_infinite_loop(self) -> None:
         """When all stats are maxed, distribution should not loop infinitely."""
         gen = RikishiGenerator(seed=42)
-        shikona = ShikonaInterpretation(
+        shikona = Shikona(
             shikona="豪栄道",
             transliteration="Goeido",
             interpretation="Great Glory Path",
@@ -661,7 +659,7 @@ class TestDistributeStatsEdgeCases(unittest.TestCase):
         shusshin = Shusshin(country_code="JP", jp_prefecture="JP-27")
 
         # Create rikishi with all stats at max
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=100,

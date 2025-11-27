@@ -3,25 +3,22 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from libs.generators.bout import (
-    BoutGenerator,
-    BoutGeneratorInput,
-    BoutGeneratorOutput,
-)
-from libs.generators.rikishi import GeneratedRikishi
-from libs.generators.shikona import ShikonaInterpretation
-from libs.generators.shusshin import Shusshin
+from libs.generators.bout import BoutGenerator
+from libs.types.bout import Bout, BoutContext
+from libs.types.rikishi import Rikishi
+from libs.types.shikona import Shikona
+from libs.types.shusshin import Shusshin
 
 
-class TestBoutGeneratorInput(unittest.TestCase):
-    """Tests for the BoutGeneratorInput Pydantic model."""
+class TestBoutContext(unittest.TestCase):
+    """Tests for the BoutContext Pydantic model."""
 
-    def test_can_create_input_with_valid_data(self) -> None:
-        """Should create BoutGeneratorInput with all required fields."""
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+    def test_can_create_context_with_valid_data(self) -> None:
+        """Should create BoutContext with all required fields."""
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="豊昇龍",
                 transliteration="Hoshoryu",
                 interpretation="Abundant Rising Dragon",
@@ -35,8 +32,8 @@ class TestBoutGeneratorInput(unittest.TestCase):
             endurance=7,
             mental=6,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="若元春",
                 transliteration="Wakamotoharu",
                 interpretation="Young Origin Spring",
@@ -52,20 +49,20 @@ class TestBoutGeneratorInput(unittest.TestCase):
         )
         fortune = [5, 10, 8, 12, 3]
 
-        input_data = BoutGeneratorInput(
+        context = BoutContext(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
             fortune=fortune,
         )
 
-        self.assertEqual(input_data.east_rikishi, east_rikishi)
-        self.assertEqual(input_data.west_rikishi, west_rikishi)
-        self.assertEqual(input_data.fortune, fortune)
+        self.assertEqual(context.east_rikishi, east_rikishi)
+        self.assertEqual(context.west_rikishi, west_rikishi)
+        self.assertEqual(context.fortune, fortune)
 
     def test_fortune_can_be_empty_list(self) -> None:
         """Fortune can be an empty list (though unusual)."""
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="照ノ富士",
                 transliteration="Terunofuji",
                 interpretation="Shining Fuji",
@@ -74,8 +71,8 @@ class TestBoutGeneratorInput(unittest.TestCase):
             potential=90,
             current=75,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="貴景勝",
                 transliteration="Takakeisho",
                 interpretation="Noble Victory",
@@ -85,18 +82,18 @@ class TestBoutGeneratorInput(unittest.TestCase):
             current=60,
         )
 
-        input_data = BoutGeneratorInput(
+        context = BoutContext(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
             fortune=[],
         )
 
-        self.assertEqual(input_data.fortune, [])
+        self.assertEqual(context.fortune, [])
 
     def test_fortune_can_include_critical_values(self) -> None:
         """Fortune can include special values like -5 and 20."""
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="朝青龍",
                 transliteration="Asashoryu",
                 interpretation="Morning Blue Dragon",
@@ -105,8 +102,8 @@ class TestBoutGeneratorInput(unittest.TestCase):
             potential=95,
             current=85,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="白鵬",
                 transliteration="Hakuho",
                 interpretation="White Phoenix",
@@ -116,22 +113,22 @@ class TestBoutGeneratorInput(unittest.TestCase):
             current=88,
         )
 
-        input_data = BoutGeneratorInput(
+        context = BoutContext(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
             fortune=[-5, 20, 10, 0, 13],
         )
 
-        self.assertIn(-5, input_data.fortune)
-        self.assertIn(20, input_data.fortune)
+        self.assertIn(-5, context.fortune)
+        self.assertIn(20, context.fortune)
 
 
-class TestBoutGeneratorOutput(unittest.TestCase):
-    """Tests for the BoutGeneratorOutput Pydantic model."""
+class TestBout(unittest.TestCase):
+    """Tests for the Bout Pydantic model."""
 
-    def test_can_create_output_with_valid_data(self) -> None:
-        """Should create BoutGeneratorOutput with all required fields."""
-        output = BoutGeneratorOutput(
+    def test_can_create_bout_with_valid_data(self) -> None:
+        """Should create Bout with all required fields."""
+        bout = Bout(
             thinking="Step-by-step analysis of the bout",
             winner="east",
             commentary=[
@@ -145,19 +142,19 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             west_xp_gain=18,
         )
 
-        self.assertEqual(output.winner, "east")
-        self.assertEqual(output.kimarite, "yorikiri")
-        self.assertEqual(output.excitement_level, 7.5)
-        self.assertEqual(output.east_xp_gain, 25)
-        self.assertEqual(output.west_xp_gain, 18)
-        self.assertEqual(len(output.commentary), 3)
+        self.assertEqual(bout.winner, "east")
+        self.assertEqual(bout.kimarite, "yorikiri")
+        self.assertEqual(bout.excitement_level, 7.5)
+        self.assertEqual(bout.east_xp_gain, 25)
+        self.assertEqual(bout.west_xp_gain, 18)
+        self.assertEqual(len(bout.commentary), 3)
 
     def test_winner_must_be_east_or_west(self) -> None:
         """Winner field should only accept 'east' or 'west'."""
         from pydantic import ValidationError
 
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="north",  # type: ignore[arg-type]
                 commentary=["Line 1", "Line 2", "Line 3"],
@@ -172,7 +169,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
         from pydantic import ValidationError
 
         # Valid kimarite should work
-        valid_output = BoutGeneratorOutput(
+        valid_bout = Bout(
             thinking="Analysis",
             winner="west",
             commentary=["Start", "Middle", "Victory"],
@@ -181,11 +178,11 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             east_xp_gain=10,
             west_xp_gain=15,
         )
-        self.assertEqual(valid_output.kimarite, "uwatenage")
+        self.assertEqual(valid_bout.kimarite, "uwatenage")
 
         # Invalid kimarite should fail
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -201,7 +198,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
 
         # Valid excitement levels
         for level in [1.0, 5.5, 10.0]:
-            output = BoutGeneratorOutput(
+            bout = Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -210,11 +207,11 @@ class TestBoutGeneratorOutput(unittest.TestCase):
                 east_xp_gain=10,
                 west_xp_gain=5,
             )
-            self.assertEqual(output.excitement_level, level)
+            self.assertEqual(bout.excitement_level, level)
 
         # Below minimum
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -226,7 +223,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
 
         # Above maximum
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -241,7 +238,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
         from pydantic import ValidationError
 
         # Zero XP is valid
-        output = BoutGeneratorOutput(
+        bout = Bout(
             thinking="Analysis",
             winner="east",
             commentary=["Start", "Middle", "Victory"],
@@ -250,12 +247,12 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             east_xp_gain=0,
             west_xp_gain=0,
         )
-        self.assertEqual(output.east_xp_gain, 0)
-        self.assertEqual(output.west_xp_gain, 0)
+        self.assertEqual(bout.east_xp_gain, 0)
+        self.assertEqual(bout.west_xp_gain, 0)
 
         # Negative XP for east should fail
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -267,7 +264,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
 
         # Negative XP for west should fail
         with self.assertRaises(ValidationError):
-            BoutGeneratorOutput(
+            Bout(
                 thinking="Analysis",
                 winner="east",
                 commentary=["Start", "Middle", "Victory"],
@@ -287,7 +284,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             "Victory by yorikiri.",
         ]
 
-        output = BoutGeneratorOutput(
+        bout = Bout(
             thinking="Analysis",
             winner="east",
             commentary=commentary_lines,
@@ -297,8 +294,8 @@ class TestBoutGeneratorOutput(unittest.TestCase):
             west_xp_gain=15,
         )
 
-        self.assertEqual(len(output.commentary), 5)
-        self.assertEqual(output.commentary, commentary_lines)
+        self.assertEqual(len(bout.commentary), 5)
+        self.assertEqual(bout.commentary, commentary_lines)
 
     def test_all_valid_kimarite_values_accepted(self) -> None:
         """All 18 valid kimarite techniques should be accepted."""
@@ -325,7 +322,7 @@ class TestBoutGeneratorOutput(unittest.TestCase):
 
         for technique in valid_kimarite:
             with self.subTest(kimarite=technique):
-                output = BoutGeneratorOutput(
+                bout = Bout(
                     thinking="Analysis",
                     winner="east",
                     commentary=["Start", "Middle", "Victory"],
@@ -334,9 +331,10 @@ class TestBoutGeneratorOutput(unittest.TestCase):
                     east_xp_gain=10,
                     west_xp_gain=5,
                 )
-                self.assertEqual(output.kimarite, technique)
+                self.assertEqual(bout.kimarite, technique)
 
 
+@patch("libs.generators.bout.get_openai_singleton")
 class TestBoutGenerator(unittest.TestCase):
     """Tests for the BoutGenerator class."""
 
@@ -348,7 +346,7 @@ class TestBoutGenerator(unittest.TestCase):
     ) -> MagicMock:
         """Create a mock OpenAI response for testing."""
         mock_response = MagicMock()
-        mock_response.output_parsed = BoutGeneratorOutput(
+        mock_response.output_parsed = Bout(
             thinking="Mock analysis of the bout",
             winner=winner,  # type: ignore[arg-type]
             commentary=[
@@ -364,7 +362,9 @@ class TestBoutGenerator(unittest.TestCase):
         mock_response.usage = {"total_tokens": 500}
         return mock_response
 
-    def test_generator_initialization_with_seed(self) -> None:
+    def test_generator_initialization_with_seed(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should initialize generator with seed for deterministic fortune."""
         gen1 = BoutGenerator(seed=42)
         gen2 = BoutGenerator(seed=42)
@@ -375,21 +375,25 @@ class TestBoutGenerator(unittest.TestCase):
 
         self.assertEqual(fortune1, fortune2)
 
-    def test_generator_initialization_with_model(self) -> None:
+    def test_generator_initialization_with_model(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should initialize generator with specified model."""
         gen = BoutGenerator(model="gpt-5-mini", seed=42)
         self.assertEqual(gen.model, "gpt-5-mini")
 
-    def test_generate_produces_valid_output(self) -> None:
+    def test_generate_produces_valid_output(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should generate a valid bout output."""
         gen = BoutGenerator(seed=42)
 
         # Configure the mock client
         mock_response = self._create_mock_response()
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="豊昇龍",
                 transliteration="Hoshoryu",
                 interpretation="Abundant Rising Dragon",
@@ -398,8 +402,8 @@ class TestBoutGenerator(unittest.TestCase):
             potential=60,
             current=40,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="若元春",
                 transliteration="Wakamotoharu",
                 interpretation="Young Origin Spring",
@@ -411,7 +415,7 @@ class TestBoutGenerator(unittest.TestCase):
 
         result = gen.generate(east_rikishi, west_rikishi)
 
-        self.assertIsInstance(result, BoutGeneratorOutput)
+        self.assertIsInstance(result, Bout)
         self.assertIn(result.winner, ["east", "west"])
         self.assertIsNotNone(result.kimarite)
         self.assertGreaterEqual(result.excitement_level, 1.0)
@@ -419,15 +423,17 @@ class TestBoutGenerator(unittest.TestCase):
         self.assertGreaterEqual(result.east_xp_gain, 0)
         self.assertGreaterEqual(result.west_xp_gain, 0)
 
-    def test_generate_calls_openai_with_correct_parameters(self) -> None:
+    def test_generate_calls_openai_with_correct_parameters(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should call OpenAI API with correct model and input format."""
         gen = BoutGenerator(model="gpt-5-mini", seed=42)
 
         mock_response = self._create_mock_response()
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="照ノ富士",
                 transliteration="Terunofuji",
                 interpretation="Shining Fuji",
@@ -436,8 +442,8 @@ class TestBoutGenerator(unittest.TestCase):
             potential=90,
             current=75,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="貴景勝",
                 transliteration="Takakeisho",
                 interpretation="Noble Victory",
@@ -450,13 +456,13 @@ class TestBoutGenerator(unittest.TestCase):
         gen.generate(east_rikishi, west_rikishi)
 
         # Verify the API was called
-        gen.client.responses.parse.assert_called_once()  # type: ignore[attr-defined]
-        call_kwargs = gen.client.responses.parse.call_args[1]  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.assert_called_once()
+        call_kwargs = mock_singleton.return_value.responses.parse.call_args[1]
 
         # Check parameters
         self.assertEqual(call_kwargs["model"], "gpt-5-mini")
         self.assertEqual(call_kwargs["reasoning"]["effort"], "low")
-        self.assertEqual(call_kwargs["text_format"], BoutGeneratorOutput)
+        self.assertEqual(call_kwargs["text_format"], Bout)
 
         # Check input structure
         input_messages = call_kwargs["input"]
@@ -464,15 +470,17 @@ class TestBoutGenerator(unittest.TestCase):
         self.assertEqual(input_messages[0]["role"], "system")
         self.assertEqual(input_messages[1]["role"], "user")
 
-    def test_generate_includes_fortune_in_input(self) -> None:
+    def test_generate_includes_fortune_in_input(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should include fortune values in the API input."""
         gen = BoutGenerator(seed=42)
 
         mock_response = self._create_mock_response()
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="若隆景",
                 transliteration="Wakatakakage",
                 interpretation="Young Prosperous View",
@@ -481,8 +489,8 @@ class TestBoutGenerator(unittest.TestCase):
             potential=65,
             current=50,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="阿炎",
                 transliteration="Abi",
                 interpretation="Noble Fire",
@@ -495,7 +503,7 @@ class TestBoutGenerator(unittest.TestCase):
         gen.generate(east_rikishi, west_rikishi)
 
         # Get the user input from the API call
-        call_kwargs = gen.client.responses.parse.call_args[1]  # type: ignore[attr-defined]
+        call_kwargs = mock_singleton.return_value.responses.parse.call_args[1]
         user_input = call_kwargs["input"][1]["content"]
 
         # Parse the JSON input
@@ -516,17 +524,19 @@ class TestBoutGenerator(unittest.TestCase):
                 f"Fortune value {value} not in valid range",
             )
 
-    def test_generate_raises_error_when_parsing_fails(self) -> None:
+    def test_generate_raises_error_when_parsing_fails(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should raise ValueError when API response cannot be parsed."""
         gen = BoutGenerator(seed=42)
 
         # Configure mock to return None for output_parsed
         mock_response = MagicMock()
         mock_response.output_parsed = None
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="明生",
                 transliteration="Meisei",
                 interpretation="Bright Life",
@@ -535,8 +545,8 @@ class TestBoutGenerator(unittest.TestCase):
             potential=50,
             current=30,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="隆の勝",
                 transliteration="Takanotsuru",
                 interpretation="Prosperous Victory",
@@ -551,7 +561,9 @@ class TestBoutGenerator(unittest.TestCase):
 
         self.assertIn("Failed to parse", str(context.exception))
 
-    def test_different_seeds_produce_different_fortune(self) -> None:
+    def test_different_seeds_produce_different_fortune(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Different seeds should produce different fortune sequences."""
         gen1 = BoutGenerator(seed=42)
         gen2 = BoutGenerator(seed=100)
@@ -562,7 +574,9 @@ class TestBoutGenerator(unittest.TestCase):
         # At least some values should be different
         self.assertNotEqual(fortune1, fortune2)
 
-    def test_system_prompt_loads_correctly(self) -> None:
+    def test_system_prompt_loads_correctly(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """System prompt should be loaded at class level."""
         # The prompt should be loaded once and accessible
         self.assertIsInstance(BoutGenerator._system_prompt, str)
@@ -574,18 +588,20 @@ class TestBoutGenerator(unittest.TestCase):
         )
         self.assertIn("kimarite", BoutGenerator._system_prompt.lower())
 
-    def test_generate_with_evenly_matched_fighters(self) -> None:
+    def test_generate_with_evenly_matched_fighters(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should handle evenly matched fighters correctly."""
         gen = BoutGenerator(seed=42)
 
         mock_response = self._create_mock_response(
             winner="west", kimarite="uwatenage", excitement=9.5
         )
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
         # Create two evenly matched rikishi
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="一山本",
                 transliteration="Ichiyamamoto",
                 interpretation="One Mountain Origin",
@@ -599,8 +615,8 @@ class TestBoutGenerator(unittest.TestCase):
             endurance=7,
             mental=7,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="錦富士",
                 transliteration="Nishikifuji",
                 interpretation="Brocade Fuji",
@@ -618,21 +634,23 @@ class TestBoutGenerator(unittest.TestCase):
         result = gen.generate(east_rikishi, west_rikishi)
 
         # Should produce valid result
-        self.assertIsInstance(result, BoutGeneratorOutput)
+        self.assertIsInstance(result, Bout)
         self.assertIn(result.winner, ["east", "west"])
 
-    def test_generate_with_severe_mismatch(self) -> None:
+    def test_generate_with_severe_mismatch(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Should handle severe ability mismatch correctly."""
         gen = BoutGenerator(seed=42)
 
         mock_response = self._create_mock_response(
             winner="east", kimarite="oshidashi", excitement=2.5
         )
-        gen.client.responses.parse.return_value = mock_response  # type: ignore[attr-defined]
+        mock_singleton.return_value.responses.parse.return_value = mock_response
 
         # Create mismatched fighters (elite vs beginner)
-        east_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        east_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="大栄翔",
                 transliteration="Daieisho",
                 interpretation="Great Prosperous Soar",
@@ -646,8 +664,8 @@ class TestBoutGenerator(unittest.TestCase):
             endurance=13,
             mental=10,
         )
-        west_rikishi = GeneratedRikishi(
-            shikona=ShikonaInterpretation(
+        west_rikishi = Rikishi(
+            shikona=Shikona(
                 shikona="新人",
                 transliteration="Shinjin",
                 interpretation="Newcomer",
@@ -665,9 +683,11 @@ class TestBoutGenerator(unittest.TestCase):
         result = gen.generate(east_rikishi, west_rikishi)
 
         # Should produce valid result
-        self.assertIsInstance(result, BoutGeneratorOutput)
+        self.assertIsInstance(result, Bout)
 
-    def test_fortune_generation_produces_expected_range(self) -> None:
+    def test_fortune_generation_produces_expected_range(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Fortune values should include normal range and criticals."""
         gen = BoutGenerator(seed=42)
 
@@ -684,7 +704,9 @@ class TestBoutGenerator(unittest.TestCase):
                     f"Fortune value {value} not in valid range",
                 )
 
-    def test_generator_uses_same_seed_for_fortune(self) -> None:
+    def test_generator_uses_same_seed_for_fortune(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Generator should use consistent seed for fortune generation."""
         gen = BoutGenerator(seed=42)
 
@@ -698,7 +720,9 @@ class TestBoutGenerator(unittest.TestCase):
         # Should match
         self.assertEqual(fortune1, fortune2)
 
-    def test_fortune_generation_can_produce_criticals(self) -> None:
+    def test_fortune_generation_can_produce_criticals(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Fortune generation should occasionally produce critical values."""
         gen = BoutGenerator(seed=12345)
 
@@ -722,7 +746,9 @@ class TestBoutGenerator(unittest.TestCase):
             "Critical fail (-5) should appear with enough samples",
         )
 
-    def test_fortune_generation_returns_correct_count(self) -> None:
+    def test_fortune_generation_returns_correct_count(
+        self, mock_singleton: MagicMock
+    ) -> None:
         """Fortune generation returns exactly FORTUNE_COUNT values."""
         from libs.generators.bout import FORTUNE_COUNT
 
