@@ -5,9 +5,9 @@ import os
 import random
 from typing import Final
 
-from libs.generators.rikishi import Rikishi
 from libs.singletons.openai import get_openai_singleton
 from libs.types.bout import Bout, BoutContext
+from libs.types.rikishi import Rikishi
 
 logger = logging.getLogger(__name__)
 
