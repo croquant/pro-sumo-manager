@@ -6,7 +6,8 @@ import random
 from typing import Final
 
 import pycountry
-from pydantic import BaseModel
+
+from libs.types.shusshin import Shusshin
 
 # Probability that a generated wrestler is Japanese (vs foreign)
 JAPANESE_PROB: Final[float] = 0.88
@@ -78,25 +79,6 @@ COUNTRY_PROBABILITIES: Final[dict[str, float]] = {
     "UA": 0.02,  # Ukraine
     "US": 0.02,  # United States
 }
-
-
-class Shusshin(BaseModel):
-    """Wrestler origin data (Django-agnostic)."""
-
-    country_code: str
-    jp_prefecture: str = ""
-
-    def __str__(self) -> str:
-        """Return human-readable origin string."""
-        if self.country_code == "JP" and self.jp_prefecture:
-            prefecture = pycountry.subdivisions.get(code=self.jp_prefecture)
-            prefecture_name = (
-                prefecture.name if prefecture else self.jp_prefecture
-            )
-            return f"{prefecture_name}, Japan"
-        country = pycountry.countries.get(alpha_2=self.country_code)
-        country_name = country.name if country else self.country_code
-        return country_name
 
 
 class ShusshinGenerator:

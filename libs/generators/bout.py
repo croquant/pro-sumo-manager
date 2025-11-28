@@ -3,82 +3,16 @@
 import logging
 import os
 import random
-from typing import Final, Literal
+from typing import Final
 
-from pydantic import BaseModel, Field
-
-from libs.generators.rikishi import GeneratedRikishi
 from libs.singletons.openai import get_openai_singleton
+from libs.types.bout import Bout, BoutContext
+from libs.types.rikishi import Rikishi
 
 logger = logging.getLogger(__name__)
 
 DIRNAME: Final[str] = os.path.dirname(__file__)
 FORTUNE_COUNT: Final[int] = 5  # Number of fortune rolls for bout simulation
-
-
-class BoutGeneratorInput(BaseModel):
-    """Input data for generating a bout."""
-
-    east_rikishi: GeneratedRikishi = Field(
-        ..., description="The rikishi on the east side of the bout"
-    )
-    west_rikishi: GeneratedRikishi = Field(
-        ..., description="The rikishi on the west side of the bout"
-    )
-    fortune: list[int] = Field(
-        ...,
-        description=(
-            "A list of random integers to be used for randomness in the bout"
-        ),
-    )
-
-
-class BoutGeneratorOutput(BaseModel):
-    """Output data from a generated bout."""
-
-    thinking: str = Field(
-        ..., description="Step-by-step reasoning for the bout simulation"
-    )
-    winner: Literal["east", "west"] = Field(
-        ..., description="The winner of the bout"
-    )
-    commentary: list[str] = Field(
-        ...,
-        description="A list of commentary lines describing the bout",
-        min_length=3,
-    )
-    kimarite: Literal[
-        "yorikiri",
-        "oshidashi",
-        "hatakikomi",
-        "uwatenage",
-        "shitatenage",
-        "tsuppari",
-        "kotenage",
-        "yori-taoshi",
-        "oshitaoshi",
-        "hikiotoshi",
-        "uwatedashinage",
-        "shitatedashinage",
-        "tsukiotoshi",
-        "sukuinage",
-        "tottari",
-        "ketaguri",
-        "utchari",
-        "katasukashi",
-    ] = Field(..., description="The kimarite (winning technique) used")
-    excitement_level: float = Field(
-        ...,
-        description="An excitement level from 1 (boring) to 10 (thrilling)",
-        ge=1,
-        le=10,
-    )
-    east_xp_gain: int = Field(
-        ..., ge=0, description="XP gained by east rikishi"
-    )
-    west_xp_gain: int = Field(
-        ..., ge=0, description="XP gained by west rikishi"
-    )
 
 
 def _load_system_prompt() -> str:
@@ -111,9 +45,7 @@ class BoutGenerator:
         self.client = get_openai_singleton()
         self.random = random.Random(seed)
 
-    def generate(
-        self, east_rikishi: GeneratedRikishi, west_rikishi: GeneratedRikishi
-    ) -> BoutGeneratorOutput:
+    def generate(self, east_rikishi: Rikishi, west_rikishi: Rikishi) -> Bout:
         """
         Generate a bout between two rikishi.
 
@@ -128,7 +60,7 @@ class BoutGenerator:
             ValueError: If the API response cannot be parsed.
 
         """
-        input_data = BoutGeneratorInput(
+        input_data = BoutContext(
             east_rikishi=east_rikishi,
             west_rikishi=west_rikishi,
             fortune=self._generate_fortune(),
@@ -147,7 +79,7 @@ class BoutGenerator:
             model=self.model,
             reasoning={"effort": "low"},
             input=input_list,
-            text_format=BoutGeneratorOutput,
+            text_format=Bout,
         )
         logger.info("OpenAI API Usage: %s", response.usage)
 

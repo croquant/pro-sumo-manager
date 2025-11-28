@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 from libs.generators.shikona import (
     ShikonaGenerationError,
     ShikonaGenerator,
-    ShikonaInterpretation,
 )
+from libs.types.shikona import Shikona
 
 
-class ShikonaInterpretationTests(unittest.TestCase):
-    """Tests for the ShikonaInterpretation Pydantic model."""
+class ShikonaTests(unittest.TestCase):
+    """Tests for the Shikona Pydantic model."""
 
-    def test_create_shikona_interpretation(self) -> None:
-        """Should create a ShikonaInterpretation with all fields."""
-        interp = ShikonaInterpretation(
+    def test_create_shikona(self) -> None:
+        """Should create a Shikona with all fields."""
+        interp = Shikona(
             shikona="豊昇龍",
             transliteration="hoshoryu",
             interpretation="rising dragon",
@@ -69,7 +69,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
     def test_call_openai_success(self, mock_singleton: MagicMock) -> None:
         """Should successfully call OpenAI API and return parsed response."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="豊昇龍",
             transliteration="hoshoryu",
             interpretation="rising dragon",
@@ -80,7 +80,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator._call_openai("豊昇龍")
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         self.assertEqual(result.shikona, "豊昇龍")
         self.assertEqual(result.transliteration, "hoshoryu")
         self.assertEqual(result.interpretation, "rising dragon")
@@ -90,7 +90,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
     def test_call_openai_with_parent(self, mock_singleton: MagicMock) -> None:
         """Should call OpenAI with formatted parent message."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="太昇龍",
             transliteration="taishoryu",
             interpretation="great rising dragon",
@@ -101,7 +101,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator._call_openai("太郎山", parent_shikona="豊昇龍")
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         # Verify the user message was formatted correctly
         call_args = mock_singleton.return_value.responses.parse.call_args
         user_message = call_args[1]["input"][1]["content"]
@@ -112,7 +112,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
     def test_call_openai_with_shusshin(self, mock_singleton: MagicMock) -> None:
         """Should call OpenAI with formatted shusshin message."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="蒼鷹山",
             transliteration="sotakayama",
             interpretation="blue hawk mountain",
@@ -123,7 +123,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator._call_openai("太郎山", shusshin="Mongolia")
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         # Verify the user message was formatted correctly
         call_args = mock_singleton.return_value.responses.parse.call_args
         user_message = call_args[1]["input"][1]["content"]
@@ -136,7 +136,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
     ) -> None:
         """Should call OpenAI with both parent and shusshin."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="白桜",
             transliteration="hakuo",
             interpretation="white cherry",
@@ -149,7 +149,7 @@ class ShikonaGeneratorCallOpenAITests(unittest.TestCase):
             "力山", parent_shikona="白鵬", shusshin="Tokyo"
         )
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         # Verify the user message was formatted correctly
         call_args = mock_singleton.return_value.responses.parse.call_args
         user_message = call_args[1]["input"][1]["content"]
@@ -196,7 +196,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
     def test_generate_single(self, mock_singleton: MagicMock) -> None:
         """Should generate a single shikona."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="豊昇龍",
             transliteration="hoshoryu",
             interpretation="rising dragon",
@@ -207,7 +207,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator.generate_single()
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         self.assertEqual(result.shikona, "豊昇龍")
         self.assertEqual(result.transliteration, "hoshoryu")
         self.assertEqual(result.interpretation, "rising dragon")
@@ -218,7 +218,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
     ) -> None:
         """Should generate a single shikona related to parent."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="太昇龍",
             transliteration="taishoryu",
             interpretation="great rising dragon",
@@ -229,7 +229,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator.generate_single(parent_shikona="豊昇龍")
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         self.assertEqual(result.shikona, "太昇龍")
         # Verify parent was passed to API
         call_args = mock_singleton.return_value.responses.parse.call_args
@@ -242,7 +242,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
     ) -> None:
         """Should generate a single shikona with origin themes."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="蒼鷹",
             transliteration="sotaka",
             interpretation="blue hawk",
@@ -253,7 +253,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
         generator = ShikonaGenerator(seed=42)
         result = generator.generate_single(shusshin="Mongolia")
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         self.assertEqual(result.shikona, "蒼鷹")
         # Verify shusshin was passed to API
         call_args = mock_singleton.return_value.responses.parse.call_args
@@ -266,7 +266,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
     ) -> None:
         """Should generate a shikona with both parent and origin."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="白桜",
             transliteration="hakuo",
             interpretation="white cherry",
@@ -279,7 +279,7 @@ class ShikonaGeneratorGenerateSingleTests(unittest.TestCase):
             parent_shikona="白鵬", shusshin="Tokyo"
         )
 
-        self.assertIsInstance(result, ShikonaInterpretation)
+        self.assertIsInstance(result, Shikona)
         self.assertEqual(result.shikona, "白桜")
         # Verify both were passed to API
         call_args = mock_singleton.return_value.responses.parse.call_args
@@ -302,7 +302,7 @@ class ShikonaGeneratorGenerateBatchTests(unittest.TestCase):
             ("都留樹富士", "tsurugifuji", "rooted fuji strength"),
         ]:
             mock_resp = MagicMock()
-            mock_resp.output_parsed = ShikonaInterpretation(
+            mock_resp.output_parsed = Shikona(
                 shikona=interp_data[0],
                 transliteration=interp_data[1],
                 interpretation=interp_data[2],
@@ -335,7 +335,7 @@ class ShikonaGeneratorGenerateBatchTests(unittest.TestCase):
             ("太昇龍", "taishoryu", "great rising dragon"),
         ]:
             mock_resp = MagicMock()
-            mock_resp.output_parsed = ShikonaInterpretation(
+            mock_resp.output_parsed = Shikona(
                 shikona=interp_data[0],
                 transliteration=interp_data[1],
                 interpretation=interp_data[2],
@@ -368,7 +368,7 @@ class ShikonaGeneratorGenerateBatchTests(unittest.TestCase):
             ("翔馬", "shoma", "soaring horse"),
         ]:
             mock_resp = MagicMock()
-            mock_resp.output_parsed = ShikonaInterpretation(
+            mock_resp.output_parsed = Shikona(
                 shikona=interp_data[0],
                 transliteration=interp_data[1],
                 interpretation=interp_data[2],
@@ -401,7 +401,7 @@ class ShikonaGeneratorGenerateBatchTests(unittest.TestCase):
             ("白都", "hakuto", "white capital"),
         ]:
             mock_resp = MagicMock()
-            mock_resp.output_parsed = ShikonaInterpretation(
+            mock_resp.output_parsed = Shikona(
                 shikona=interp_data[0],
                 transliteration=interp_data[1],
                 interpretation=interp_data[2],
@@ -429,7 +429,7 @@ class ShikonaGeneratorGenerateBatchTests(unittest.TestCase):
     def test_generate_batch_single(self, mock_singleton: MagicMock) -> None:
         """Should generate a single shikona when count=1."""
         mock_response = MagicMock()
-        mock_response.output_parsed = ShikonaInterpretation(
+        mock_response.output_parsed = Shikona(
             shikona="豊昇龍",
             transliteration="hoshoryu",
             interpretation="rising dragon",

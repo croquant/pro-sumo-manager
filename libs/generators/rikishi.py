@@ -1,9 +1,6 @@
 """Generator for complete rikishi (wrestlers) with stats and background."""
 
 import random
-from typing import Literal
-
-from pydantic import BaseModel, Field
 
 from libs.constants import (
     MAX_POTENTIAL,
@@ -14,47 +11,9 @@ from libs.constants import (
     NUM_STATS,
     SIGMA_POTENTIAL,
 )
-from libs.generators.shikona import ShikonaGenerator, ShikonaInterpretation
-from libs.generators.shusshin import Shusshin, ShusshinGenerator
-
-# Type alias for stat names
-StatName = Literal["strength", "technique", "balance", "endurance", "mental"]
-
-
-class GeneratedRikishi(BaseModel):
-    """
-    A complete rikishi with name, origin, abilities, and individual stats.
-
-    The relationship between current ability and individual stats:
-    - current: Overall ability score (5-100) representing total capability
-    - Individual stats: Specific attributes (1-20 each) that sum up to represent
-      how the current ability is distributed across different areas
-    - When current ability increases through training, individual stats improve
-    - The starting distribution: all stats begin at 1, then (current - 5) points
-      are randomly distributed among the five stats
-
-    Attributes:
-        shikona: Ring name with interpretation.
-        shusshin: Place of origin.
-        potential: Maximum ability the rikishi can reach (5-100).
-        current: Current overall ability level (5-100).
-        strength: Physical strength stat (1-20).
-        technique: Technical skill stat (1-20).
-        balance: Balance and stability stat (1-20).
-        endurance: Stamina and endurance stat (1-20).
-        mental: Mental fortitude stat (1-20).
-
-    """
-
-    shikona: ShikonaInterpretation
-    shusshin: Shusshin
-    potential: int = Field(..., ge=MIN_POTENTIAL, le=MAX_POTENTIAL)
-    current: int = Field(..., ge=MIN_POTENTIAL, le=MAX_POTENTIAL)
-    strength: int = Field(default=1, ge=MIN_STAT_VALUE, le=MAX_STAT_VALUE)
-    technique: int = Field(default=1, ge=MIN_STAT_VALUE, le=MAX_STAT_VALUE)
-    balance: int = Field(default=1, ge=MIN_STAT_VALUE, le=MAX_STAT_VALUE)
-    endurance: int = Field(default=1, ge=MIN_STAT_VALUE, le=MAX_STAT_VALUE)
-    mental: int = Field(default=1, ge=MIN_STAT_VALUE, le=MAX_STAT_VALUE)
+from libs.generators.shikona import ShikonaGenerator
+from libs.generators.shusshin import ShusshinGenerator
+from libs.types.rikishi import Rikishi, StatName
 
 
 class RikishiGenerator:
@@ -127,9 +86,7 @@ class RikishiGenerator:
         # Ensure current never exceeds potential
         return min(current, potential)
 
-    def _distribute_stats(
-        self, rikishi: GeneratedRikishi, points: int
-    ) -> GeneratedRikishi:
+    def _distribute_stats(self, rikishi: Rikishi, points: int) -> Rikishi:
         """
         Distribute points randomly across rikishi stats.
 
@@ -190,19 +147,19 @@ class RikishiGenerator:
         # Use model_copy to create a new validated instance
         return rikishi.model_copy(update=stats)
 
-    def get(self) -> GeneratedRikishi:
+    def get(self) -> Rikishi:
         """
         Generate a complete rikishi with all attributes.
 
         Returns:
-            GeneratedRikishi with shikona, shusshin, abilities, and stats.
+            Rikishi with shikona, shusshin, abilities, and stats.
 
         """
         shusshin = self.shusshin_generator.get()
         shikona = self.shikona_generator.generate_single(shusshin=str(shusshin))
         potential = self._get_potential_ability()
         current = self._get_current_ability(potential)
-        rikishi = GeneratedRikishi(
+        rikishi = Rikishi(
             shikona=shikona,
             shusshin=shusshin,
             potential=potential,
