@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import unittest
 from unittest.mock import patch
 
@@ -22,8 +21,8 @@ class NameUtilityTests(unittest.TestCase):
         data = name.generate_name_char_bigram_table()
         self.assertIn("start", data)
         self.assertIn("bigrams", data)
-        path = os.path.join(name.DIRNAME, "data", "name_char_bigram_table.json")
-        self.assertTrue(os.path.exists(path))
+        path = name.DATA_DIR / "name_char_bigram_table.json"
+        self.assertTrue(path.exists())
 
     def test_get_bigram_tables(self) -> None:
         """Should load the bigram tables from disk."""

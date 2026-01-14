@@ -14,7 +14,6 @@ __all__ = [
     "Heya",
     "Rank",
     "Rikishi",
-    "RikishiStats",
     "Shikona",
     "Shusshin",
 ]

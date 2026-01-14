@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import django_stubs_ext
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 django_stubs_ext.monkeypatch()
@@ -28,12 +29,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "default")
+_secret_key = os.environ.get("DJANGO_SECRET_KEY")
+if not _secret_key:
+    if DEBUG:
+        # Auto-generate for local development only
+        _secret_key = "django-insecure-dev-only-" + "x" * 50
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY environment variable must be set in production"
+        )
+SECRET_KEY = _secret_key
 
-ALLOWED_HOSTS: list[str] = []
+# ALLOWED_HOSTS from environment (comma-separated)
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("ALLOWED_HOSTS", "").split(",")
+    if h.strip()
+]
 
 
 # Application definition

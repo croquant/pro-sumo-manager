@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import json
-import os
 import random
 import re
 from collections import Counter
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, TypedDict, cast
 
 import pykakasi
 
-DIRNAME = os.path.dirname(__file__)
+DATA_DIR = Path(__file__).parent / "data"
 
 
 PosEntry = tuple[str, float]
@@ -32,9 +32,7 @@ TransitionTable = dict[str, StartTable]
 
 def get_initial_existing_names() -> list[str]:
     """Retrieve a set of all existing names from skikona_corpus.txt."""
-    with open(
-        os.path.join(DIRNAME, "data", "shikona_corpus.txt"), encoding="utf-8"
-    ) as f:
+    with (DATA_DIR / "shikona_corpus.txt").open(encoding="utf-8") as f:
         names = [line.strip() for line in f if line.strip()]
     return names
 
@@ -72,8 +70,7 @@ def generate_name_char_bigram_table() -> dict[str, Any]:
         }
 
     data = {"start": start_table, "bigrams": bigram_table}
-    with open(
-        os.path.join(DIRNAME, "data", "name_char_bigram_table.json"),
+    with (DATA_DIR / "name_char_bigram_table.json").open(
         "w",
         encoding="utf-8",
     ) as f:
@@ -83,10 +80,7 @@ def generate_name_char_bigram_table() -> dict[str, Any]:
 
 def get_bigram_tables() -> tuple[StartTable, BigramTable]:
     """Load the bigram tables used for name generation."""
-    with open(
-        os.path.join(DIRNAME, "data", "name_char_bigram_table.json"),
-        encoding="utf-8",
-    ) as f:
+    with (DATA_DIR / "name_char_bigram_table.json").open(encoding="utf-8") as f:
         raw_data: dict[str, Any] = json.load(f)
     start = [(str(c), float(p)) for c, p in raw_data["start"]]
     bigrams_raw: dict[str, Any] = raw_data["bigrams"]
