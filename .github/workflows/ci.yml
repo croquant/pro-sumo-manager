@@ -50,9 +50,40 @@ jobs:
         with:
           args: "format --check --diff"
 
+  typecheck:
+    name: Pyright type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.13"
+          enable-cache: true
+
+      - name: Cache .venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('uv.lock') }}
+
+      - name: Sync project
+        run: uv sync --frozen --all-extras --dev
+
+      - name: Run pyright
+        run: uv run pyright
+
   test:
     name: Tests with coverage
-    needs: lint
+    needs: [lint, typecheck]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

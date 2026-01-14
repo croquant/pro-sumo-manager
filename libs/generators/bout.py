@@ -5,6 +5,8 @@ import os
 import random
 from typing import Final
 
+from openai.types.responses import ResponseInputItemParam
+
 from libs.singletons.openai import get_openai_singleton
 from libs.types.bout import Bout, BoutContext
 from libs.types.rikishi import Rikishi
@@ -66,7 +68,7 @@ class BoutGenerator:
             fortune=self._generate_fortune(),
         )
 
-        input_list = [
+        input_list: list[ResponseInputItemParam] = [
             {
                 "role": "system",
                 "content": self._system_prompt,

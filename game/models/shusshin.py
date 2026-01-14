@@ -46,5 +46,5 @@ class Shusshin(models.Model):
     def __str__(self) -> str:
         """Return a human-readable representation of the origin."""
         if self.country_code == Country.JP:
-            return JPPrefecture(self.jp_prefecture).label
-        return Country(self.country_code).label
+            return str(JPPrefecture(self.jp_prefecture).label)
+        return str(Country(self.country_code).label)
