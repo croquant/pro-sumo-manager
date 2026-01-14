@@ -18,11 +18,36 @@ dependencies = [
 [dependency-groups]
 dev = [
     "coverage>=7.10.5",
-    "mypy>=1.17.1",
-    "mypy-extensions>=1.1.0",
     "pre-commit>=4.3.0",
+    "pyright>=1.1.390",
     "ruff>=0.12.10",
 ]
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.pyright]
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "standard"
+
+include = ["config", "game", "libs", "tests"]
+exclude = [
+    ".venv",
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    "coverage",
+    "**/migrations",
+    "**/migrations/**",
+    "**/__pycache__",
+]
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+# Django compatibility - dynamic attributes (get_*_display, reverse relations)
+reportAttributeAccessIssue = "warning"
+# Django admin - using _obj for unused parameters is a common pattern
+reportIncompatibleMethodOverride = "warning"

@@ -66,7 +66,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     def has_change_permission(
         self,
         request: HttpRequest,
-        _obj: GameDate | None = None,
+        obj: GameDate | None = None,  # noqa: ARG002
     ) -> bool:
         """Disable editing - dates are immutable."""
         return False
@@ -74,7 +74,7 @@ class GameDateAdmin(admin.ModelAdmin[GameDate]):
     def has_delete_permission(
         self,
         request: HttpRequest,
-        _obj: GameDate | None = None,
+        obj: GameDate | None = None,  # noqa: ARG002
     ) -> bool:
         """Disable deletion - preserve historical record."""
         return False
@@ -104,7 +104,7 @@ class DivisionAdmin(admin.ModelAdmin[Division]):
     def has_delete_permission(
         self,
         request: HttpRequest,
-        _obj: Division | None = None,
+        obj: Division | None = None,  # noqa: ARG002
     ) -> bool:
         """Disable deletion - divisions are permanent data."""
         return False
