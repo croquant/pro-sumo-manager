@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 
 import django_stubs_ext
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 django_stubs_ext.monkeypatch()
@@ -28,12 +30,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "default")
+_secret_key: str | None = os.environ.get("DJANGO_SECRET_KEY")
+if not _secret_key:
+    if DEBUG:
+        # Auto-generate random key for local development only
+        _secret_key = get_random_secret_key()
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY environment variable must be set in production"
+        )
+SECRET_KEY = _secret_key
 
-ALLOWED_HOSTS: list[str] = []
+# ALLOWED_HOSTS from environment (comma-separated)
+# Defaults to localhost/127.0.0.1 in DEBUG mode
+_allowed_hosts_default = "localhost,127.0.0.1" if DEBUG else ""
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("ALLOWED_HOSTS", _allowed_hosts_default).split(",")
+    if h.strip()
+]
 
 
 # Application definition
