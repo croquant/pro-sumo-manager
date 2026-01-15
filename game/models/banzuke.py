@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 
 from game.models.gamedate import GameDate
 from game.models.rank import Rank
@@ -84,6 +85,36 @@ class Banzuke(models.Model):
         """Return human-readable representation."""
         return f"{self.year} {self.name}"
 
+    def clean(self) -> None:
+        """Validate date consistency."""
+        errors: dict[str, list[str]] = {}
+
+        start_date = getattr(self, "start_date", None)
+        end_date = getattr(self, "end_date", None)
+
+        # Validate start_date matches year/month
+        if start_date is not None:
+            if start_date.year != self.year:
+                errors.setdefault("start_date", []).append(
+                    "Start date year must match tournament year."
+                )
+            if start_date.month != self.month:
+                errors.setdefault("start_date", []).append(
+                    "Start date month must match tournament month."
+                )
+
+        # Validate end_date is after start_date
+        if start_date is not None and end_date is not None:
+            start = (start_date.year, start_date.month, start_date.day)
+            end = (end_date.year, end_date.month, end_date.day)
+            if end <= start:
+                errors.setdefault("end_date", []).append(
+                    "End date must be after start date."
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
 
 class BanzukeEntry(models.Model):
     """
@@ -155,6 +186,11 @@ class BanzukeEntry(models.Model):
                 violation_error_message=(
                     "Wins, losses, and absences cannot exceed 15."
                 ),
+            ),
+            models.CheckConstraint(
+                condition=Q(wins__lte=15 - F("losses") - F("absences")),
+                name="banzukeentry_total_matches_max_15",
+                violation_error_message="Total matches cannot exceed 15.",
             ),
         ]
 

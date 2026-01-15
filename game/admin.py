@@ -209,7 +209,7 @@ class BanzukeEntryAdmin(admin.ModelAdmin[BanzukeEntry]):
     list_filter = ("banzuke", "rank__division")
     search_fields = ("rikishi__shikona__transliteration",)
     ordering = ("banzuke", "rank")
-    list_select_related = ("banzuke", "rikishi__shikona", "rank")
+    list_select_related = ("banzuke", "rikishi__shikona", "rank__division")
 
     @admin.display(description="Rikishi")
     def rikishi_name(self, obj: BanzukeEntry) -> str:

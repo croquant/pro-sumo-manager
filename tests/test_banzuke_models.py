@@ -1,5 +1,6 @@
 """Tests for Banzuke and BanzukeEntry models."""
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -266,3 +267,145 @@ class TestBanzukeConstraints(TestCase):
                 start_date=start,
                 end_date=end,
             )
+
+    def test_total_matches_cannot_exceed_15(self) -> None:
+        """Should prevent total matches from exceeding 15."""
+        start = GameDate.objects.create(year=2024, month=1, day=1)
+        end = GameDate.objects.create(year=2024, month=1, day=15)
+        banzuke = Banzuke.objects.create(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+            end_date=end,
+        )
+
+        division = Division.objects.get(name="M")
+        rank = Rank.objects.create(division=division, title="Y", level=1)
+
+        shikona = Shikona.objects.create(
+            transliteration="Hakuho",
+            name="白鵬",
+            interpretation="White Phoenix",
+        )
+        shusshin = Shusshin.objects.get(country_code="MN")
+        heya_name = Shikona.objects.create(
+            transliteration="Miyagino",
+            name="宮城野",
+            interpretation="Miyagino",
+        )
+        heya = Heya.objects.create(name=heya_name, created_at=start)
+
+        rikishi = Rikishi.objects.create(
+            shikona=shikona,
+            heya=heya,
+            shusshin=shusshin,
+            potential=100,
+            strength=10,
+            technique=10,
+            balance=10,
+            endurance=10,
+            mental=10,
+        )
+
+        # 8 + 5 + 3 = 16 > 15
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            BanzukeEntry.objects.create(
+                banzuke=banzuke,
+                rikishi=rikishi,
+                rank=rank,
+                wins=8,
+                losses=5,
+                absences=3,
+            )
+
+
+class TestBanzukeCleanValidation(TestCase):
+    """Tests for Banzuke clean() validation."""
+
+    def test_clean_start_date_year_mismatch(self) -> None:
+        """Should raise ValidationError if start_date year doesn't match."""
+        start = GameDate.objects.create(year=2023, month=1, day=1)
+        end = GameDate.objects.create(year=2024, month=1, day=15)
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+            end_date=end,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            banzuke.clean()
+        self.assertIn("start_date", ctx.exception.message_dict)
+
+    def test_clean_start_date_month_mismatch(self) -> None:
+        """Should raise ValidationError if start_date month doesn't match."""
+        start = GameDate.objects.create(year=2024, month=3, day=1)
+        end = GameDate.objects.create(year=2024, month=3, day=15)
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+            end_date=end,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            banzuke.clean()
+        self.assertIn("start_date", ctx.exception.message_dict)
+
+    def test_clean_end_date_before_start_date(self) -> None:
+        """Should raise ValidationError if end_date is before start_date."""
+        start = GameDate.objects.create(year=2024, month=1, day=15)
+        end = GameDate.objects.create(year=2024, month=1, day=1)
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+            end_date=end,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            banzuke.clean()
+        self.assertIn("end_date", ctx.exception.message_dict)
+
+    def test_clean_valid_dates(self) -> None:
+        """Should not raise ValidationError for valid dates."""
+        start = GameDate.objects.create(year=2024, month=1, day=1)
+        end = GameDate.objects.create(year=2024, month=1, day=15)
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+            end_date=end,
+        )
+        banzuke.clean()  # Should not raise
+
+    def test_clean_without_dates(self) -> None:
+        """Should not raise ValidationError when dates are not set."""
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+        )
+        banzuke.clean()  # Should not raise
+
+    def test_clean_start_date_only(self) -> None:
+        """Should validate start_date even without end_date."""
+        start = GameDate.objects.create(year=2023, month=1, day=1)
+        banzuke = Banzuke(
+            name="Hatsu Basho",
+            location="Tokyo",
+            year=2024,
+            month=1,
+            start_date=start,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            banzuke.clean()
+        self.assertIn("start_date", ctx.exception.message_dict)
