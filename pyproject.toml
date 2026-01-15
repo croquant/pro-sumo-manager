@@ -5,22 +5,22 @@ description = "Sumo stable management game. Run your own sumo stable. Sign prosp
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "django>=5.2.5",
-    "django-stubs>=5.2.2",
-    "django-stubs-ext>=5.2.2",
-    "openai>=1.101.0",
+    "django>=5.2.10,<6",
+    "django-stubs>=5.2.8",
+    "django-stubs-ext>=5.2.8",
+    "openai>=2.15.0",
     "pycountry>=24.6.1",
-    "pydantic>=2.11.7",
+    "pydantic>=2.12.5",
     "pykakasi>=2.3.0",
-    "python-dotenv>=1.1.1",
+    "python-dotenv>=1.2.1",
 ]
 
 [dependency-groups]
 dev = [
-    "coverage>=7.10.5",
-    "pre-commit>=4.3.0",
-    "pyright>=1.1.390",
-    "ruff>=0.12.10",
+    "coverage>=7.13.1",
+    "pre-commit>=4.5.1",
+    "pyright>=1.1.408",
+    "ruff>=0.14.11",
 ]
 
 [tool.django-stubs]
