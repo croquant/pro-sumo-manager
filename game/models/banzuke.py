@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.db import models
+from django.db.models import Q
 
 from game.models.gamedate import GameDate
 from game.models.rank import Rank
@@ -71,6 +72,11 @@ class Banzuke(models.Model):
             models.UniqueConstraint(
                 fields=["year", "month"],
                 name="unique_banzuke_season",
+            ),
+            models.CheckConstraint(
+                condition=Q(month__gte=1) & Q(month__lte=12),
+                name="banzuke_valid_month",
+                violation_error_message="Month must be between 1 and 12.",
             ),
         ]
 
@@ -141,8 +147,29 @@ class BanzukeEntry(models.Model):
                     "Rank can only be held by one Rikishi per Banzuke."
                 ),
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(wins__lte=15) & Q(losses__lte=15) & Q(absences__lte=15)
+                ),
+                name="banzukeentry_valid_match_counts",
+                violation_error_message=(
+                    "Wins, losses, and absences cannot exceed 15."
+                ),
+            ),
         ]
 
     def __str__(self) -> str:
         """Return human-readable representation."""
         return f"{self.banzuke} - {self.rikishi} ({self.rank})"
+
+    @property
+    def total_matches(self) -> int:
+        """Return total number of matches (wins + losses + absences)."""
+        return self.wins + self.losses + self.absences
+
+    @property
+    def record(self) -> str:
+        """Return formatted win-loss record (e.g., '8-7' or '8-5-2')."""
+        if self.absences:
+            return f"{self.wins}-{self.losses}-{self.absences}"
+        return f"{self.wins}-{self.losses}"

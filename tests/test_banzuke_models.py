@@ -1,5 +1,6 @@
 """Tests for Banzuke and BanzukeEntry models."""
 
+from django.db import transaction
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
@@ -167,4 +168,101 @@ class TestBanzukeEntryModel(TestCase):
                 banzuke=self.banzuke,
                 rikishi=rikishi2,
                 rank=self.rank,
+            )
+
+    def test_wins_cannot_exceed_15(self) -> None:
+        """Should prevent wins from exceeding 15."""
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            BanzukeEntry.objects.create(
+                banzuke=self.banzuke,
+                rikishi=self.rikishi,
+                rank=self.rank,
+                wins=16,
+            )
+
+    def test_losses_cannot_exceed_15(self) -> None:
+        """Should prevent losses from exceeding 15."""
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            BanzukeEntry.objects.create(
+                banzuke=self.banzuke,
+                rikishi=self.rikishi,
+                rank=self.rank,
+                losses=16,
+            )
+
+    def test_absences_cannot_exceed_15(self) -> None:
+        """Should prevent absences from exceeding 15."""
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            BanzukeEntry.objects.create(
+                banzuke=self.banzuke,
+                rikishi=self.rikishi,
+                rank=self.rank,
+                absences=16,
+            )
+
+    def test_total_matches_property(self) -> None:
+        """Should calculate total matches correctly."""
+        entry = BanzukeEntry.objects.create(
+            banzuke=self.banzuke,
+            rikishi=self.rikishi,
+            rank=self.rank,
+            wins=8,
+            losses=5,
+            absences=2,
+        )
+        self.assertEqual(entry.total_matches, 15)
+
+    def test_record_property_without_absences(self) -> None:
+        """Should format record as 'W-L' when no absences."""
+        entry = BanzukeEntry.objects.create(
+            banzuke=self.banzuke,
+            rikishi=self.rikishi,
+            rank=self.rank,
+            wins=8,
+            losses=7,
+        )
+        self.assertEqual(entry.record, "8-7")
+
+    def test_record_property_with_absences(self) -> None:
+        """Should format record as 'W-L-A' when there are absences."""
+        entry = BanzukeEntry.objects.create(
+            banzuke=self.banzuke,
+            rikishi=self.rikishi,
+            rank=self.rank,
+            wins=8,
+            losses=5,
+            absences=2,
+        )
+        self.assertEqual(entry.record, "8-5-2")
+
+
+class TestBanzukeConstraints(TestCase):
+    """Tests for Banzuke validation constraints."""
+
+    def test_invalid_month_zero(self) -> None:
+        """Should prevent month of 0."""
+        start = GameDate.objects.create(year=2024, month=1, day=1)
+        end = GameDate.objects.create(year=2024, month=1, day=15)
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            Banzuke.objects.create(
+                name="Invalid Basho",
+                location="Tokyo",
+                year=2024,
+                month=0,
+                start_date=start,
+                end_date=end,
+            )
+
+    def test_invalid_month_thirteen(self) -> None:
+        """Should prevent month greater than 12."""
+        start = GameDate.objects.create(year=2024, month=1, day=1)
+        end = GameDate.objects.create(year=2024, month=1, day=15)
+        with transaction.atomic(), self.assertRaises(IntegrityError):
+            Banzuke.objects.create(
+                name="Invalid Basho",
+                location="Tokyo",
+                year=2024,
+                month=13,
+                start_date=start,
+                end_date=end,
             )
