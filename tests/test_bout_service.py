@@ -390,6 +390,31 @@ class TestRecordBoutValidation(BoutServiceTestCase):
 
         self.assertIn("already fought", str(ctx.exception))
 
+    def test_record_bout_rejects_reversed_positions(self) -> None:
+        """Should reject bout with same wrestlers in reversed positions."""
+        bout_result = self._create_mock_bout_result()
+
+        # First bout succeeds
+        BoutService.record_bout(
+            banzuke=self.banzuke,
+            day=1,
+            east_rikishi=self.east_rikishi,
+            west_rikishi=self.west_rikishi,
+            bout_result=bout_result,
+        )
+
+        # Second bout with reversed positions fails
+        with self.assertRaises(ValidationError) as ctx:
+            BoutService.record_bout(
+                banzuke=self.banzuke,
+                day=5,
+                east_rikishi=self.west_rikishi,  # Swapped!
+                west_rikishi=self.east_rikishi,  # Swapped!
+                bout_result=bout_result,
+            )
+
+        self.assertIn("already fought", str(ctx.exception))
+
 
 class TestGetTournamentBouts(BoutServiceTestCase):
     """Tests for BoutService.get_tournament_bouts()."""

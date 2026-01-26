@@ -332,6 +332,76 @@ class TestBoutValidation(BoutModelTestCase):
             bout.full_clean()
         self.assertIn("kimarite", ctx.exception.message_dict)
 
+    def test_reversed_positions_also_rejected(self) -> None:
+        """Should prevent same wrestlers fighting with reversed positions."""
+        # Create first bout
+        Bout.objects.create(
+            banzuke=self.banzuke,
+            day=1,
+            east_rikishi=self.east_rikishi,
+            west_rikishi=self.west_rikishi,
+            winner=Bout.Winner.EAST,
+            kimarite="yorikiri",
+            east_xp_gain=10,
+            west_xp_gain=5,
+            excitement_level=Decimal("7.5"),
+            commentary="First match",
+        )
+
+        # Try to create second bout with reversed positions
+        bout = Bout(
+            banzuke=self.banzuke,
+            day=5,
+            east_rikishi=self.west_rikishi,  # Swapped!
+            west_rikishi=self.east_rikishi,  # Swapped!
+            winner=Bout.Winner.WEST,
+            kimarite="oshidashi",
+            east_xp_gain=5,
+            west_xp_gain=10,
+            excitement_level=Decimal("6.0"),
+            commentary="Reversed positions",
+        )
+
+        with self.assertRaises(ValidationError) as ctx:
+            bout.full_clean()
+        self.assertIn("already fought", str(ctx.exception))
+
+    def test_updating_existing_bout_allowed(self) -> None:
+        """Should allow updating an existing bout without duplicate error."""
+        bout = Bout.objects.create(
+            banzuke=self.banzuke,
+            day=1,
+            east_rikishi=self.east_rikishi,
+            west_rikishi=self.west_rikishi,
+            winner=Bout.Winner.EAST,
+            kimarite="yorikiri",
+            east_xp_gain=10,
+            west_xp_gain=5,
+            excitement_level=Decimal("7.5"),
+            commentary="Original match",
+        )
+
+        # Update the bout - should not raise ValidationError
+        bout.commentary = "Updated commentary"
+        bout.full_clean()  # Should not raise
+        bout.save()
+
+    def test_clean_skips_duplicate_check_when_fields_missing(self) -> None:
+        """Should skip duplicate check when required fields are not set."""
+        # Create bout without setting banzuke (clean runs before save)
+        bout = Bout(
+            day=1,
+            winner=Bout.Winner.EAST,
+            kimarite="yorikiri",
+            east_xp_gain=10,
+            west_xp_gain=5,
+            excitement_level=Decimal("7.5"),
+            commentary="Test",
+        )
+        # clean() should not raise - just skips duplicate check
+        # (will fail on save due to required fields, but that's fine)
+        bout.clean()
+
     def test_all_valid_kimarite_accepted(self) -> None:
         """Should accept all valid kimarite values."""
         for i, kimarite in enumerate(VALID_KIMARITE):

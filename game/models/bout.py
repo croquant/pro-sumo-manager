@@ -149,6 +149,8 @@ class Bout(models.Model):
 
     def clean(self) -> None:
         """Validate model data."""
+        from django.db.models import Q
+
         errors: dict[str, list[str]] = {}
 
         # Validate wrestler cannot fight themselves
@@ -164,6 +166,23 @@ class Bout(models.Model):
             errors.setdefault("kimarite", []).append(
                 f"Invalid kimarite. Must be one of: {', '.join(VALID_KIMARITE)}"
             )
+
+        # Check for existing bout with same wrestlers (in either direction)
+        banzuke_id = getattr(self, "banzuke_id", None)
+        if banzuke_id and east and west:
+            existing = Bout.objects.filter(
+                banzuke_id=banzuke_id,
+            ).filter(
+                Q(east_rikishi_id=east, west_rikishi_id=west)
+                | Q(east_rikishi_id=west, west_rikishi_id=east)
+            )
+            # Exclude self when updating
+            if self.pk:
+                existing = existing.exclude(pk=self.pk)
+            if existing.exists():
+                errors.setdefault("__all__", []).append(
+                    "These wrestlers have already fought in this tournament."
+                )
 
         if errors:
             raise ValidationError(errors)
