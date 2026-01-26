@@ -356,21 +356,27 @@ class TestLimitedOptionsWarning(TestCase):
 
         # Mock the service to return only 2 options
         mock_options = [
-            ShikonaOption(name="大海", transliteration="Ōumi", interpretation="Great Sea"),
-            ShikonaOption(name="若山", transliteration="Wakayama", interpretation="Young Mountain"),
+            ShikonaOption(
+                name="大海", transliteration="Ōumi", interpretation="Great Sea"
+            ),
+            ShikonaOption(
+                name="若山",
+                transliteration="Wakayama",
+                interpretation="Young Mountain",
+            ),
         ]
 
         with patch.object(
-            ShikonaService, "generate_shikona_options", return_value=mock_options
+            ShikonaService,
+            "generate_shikona_options",
+            return_value=mock_options,
         ):
             response = self.client.get(reverse("setup_heya_name"))
 
         self.assertEqual(response.status_code, 200)
         # Check that warning message is shown
         messages = list(response.context["messages"])
-        self.assertTrue(
-            any("limited" in str(m).lower() for m in messages)
-        )
+        self.assertTrue(any("limited" in str(m).lower() for m in messages))
 
 
 class TestIntegrityErrorHandling(TestCase):
