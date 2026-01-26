@@ -14,6 +14,7 @@ from game.models import (
     Rikishi,
     Shikona,
     Shusshin,
+    TrainingSession,
 )
 
 
@@ -220,3 +221,67 @@ class BanzukeEntryAdmin(admin.ModelAdmin[BanzukeEntry]):
     def record_display(self, obj: BanzukeEntry) -> str:
         """Return the win-loss record."""
         return obj.record
+
+
+@admin.register(TrainingSession)
+class TrainingSessionAdmin(admin.ModelAdmin[TrainingSession]):
+    """Admin panel configuration for :class:`game.models.TrainingSession`."""
+
+    list_display = (
+        "rikishi_name",
+        "stat_display",
+        "stat_change",
+        "xp_cost",
+        "created_at",
+    )
+    list_filter = ("stat", "created_at")
+    search_fields = ("rikishi__shikona__transliteration",)
+    ordering = ("-created_at",)
+    list_select_related = ("rikishi__shikona",)
+    readonly_fields = (
+        "rikishi",
+        "stat",
+        "xp_cost",
+        "stat_before",
+        "stat_after",
+        "created_at",
+    )
+
+    @admin.display(description="Rikishi")
+    def rikishi_name(self, obj: TrainingSession) -> str:
+        """Return the wrestler's ring name."""
+        return obj.rikishi.shikona.transliteration
+
+    @admin.display(description="Stat")
+    def stat_display(self, obj: TrainingSession) -> str:
+        """Return the stat name."""
+        return obj.get_stat_display()
+
+    @admin.display(description="Change")
+    def stat_change(self, obj: TrainingSession) -> str:
+        """Return the stat change."""
+        return f"{obj.stat_before} → {obj.stat_after}"
+
+    def has_add_permission(
+        self,
+        request: HttpRequest,
+        _obj: TrainingSession | None = None,
+    ) -> bool:
+        """Disable manual creation - use TrainingService instead."""
+        return False
+
+    def has_change_permission(
+        self,
+        request: HttpRequest,
+        obj: TrainingSession | None = None,  # noqa: ARG002
+    ) -> bool:
+        """Disable editing - training records are immutable."""
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: TrainingSession | None = None,  # noqa: ARG002
+    ) -> bool:
+        """Disable deletion - preserve training history."""
+        return False
