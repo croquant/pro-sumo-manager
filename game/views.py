@@ -2,14 +2,14 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from game.decorators import heya_required, setup_in_progress
-from game.models import Heya
+from game.models import Heya, Shikona
 from game.services.game_clock import GameClockService
-from game.services.shikona_service import ShikonaOption, ShikonaService
+from game.services.shikona_service import ShikonaService
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -39,6 +39,11 @@ def setup_heya_name(request: HttpRequest) -> HttpResponse:
     # Generate options and store in session for consistency
     if "heya_options" not in request.session:
         options = ShikonaService.generate_shikona_options(count=3)
+        if len(options) < 3:
+            messages.warning(
+                request,
+                "Some name options may be limited due to high demand.",
+            )
         request.session["heya_options"] = [
             {
                 "name": opt.name,
@@ -74,18 +79,17 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
 
         selected = options[index]
 
-        # Create the Shikona
-        option = ShikonaOption(
+        # Create or get the Shikona (handles race condition)
+        shikona, _ = Shikona.objects.get_or_create(
             name=selected["name"],
-            transliteration=selected["transliteration"],
-            interpretation=selected["interpretation"],
+            defaults={
+                "transliteration": selected["transliteration"],
+                "interpretation": selected["interpretation"],
+            },
         )
-        shikona = ShikonaService.create_shikona_from_option(option)
 
-        # Get or create current game date
-        current_date = GameClockService.get_current()
-        if current_date is None:
-            current_date = GameClockService.initialize()
+        # Initialize game clock (handles "already exists" gracefully)
+        current_date = GameClockService.initialize()
 
         # Create the Heya
         Heya.objects.create(
@@ -94,8 +98,8 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
             owner=request.user,
         )
 
-        # Clear session data
-        del request.session["heya_options"]
+        # Clear session data (use pop for safer cleanup)
+        request.session.pop("heya_options", None)
 
         messages.success(
             request,
@@ -106,6 +110,14 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
         # https://github.com/croquant/pro-sumo-manager/issues/77
         return redirect("dashboard")
 
-    except (ValueError, KeyError):
+    except IntegrityError:
+        # Race condition: name was taken between generation and creation
+        request.session.pop("heya_options", None)
+        messages.error(
+            request,
+            "This name was just taken. Please select a different name.",
+        )
+        return redirect("setup_heya_name")
+    except (ValueError, KeyError, IndexError):
         messages.error(request, "Invalid selection. Please try again.")
         return redirect("setup_heya_name")

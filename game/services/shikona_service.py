@@ -55,6 +55,9 @@ SHIKONA_SUFFIXES = [
     ("嶽", "dake", "Peak"),
 ]
 
+# Maximum attempts multiplier for name generation
+MAX_GENERATION_ATTEMPTS_MULTIPLIER = 10
+
 
 class ShikonaService:
     """
@@ -76,26 +79,28 @@ class ShikonaService:
         Returns:
         -------
             List of ShikonaOption instances with unique names.
+            May return fewer than requested if combinations are exhausted.
 
         """
         options: list[ShikonaOption] = []
         used_names: set[str] = set()
 
-        # Get existing shikona names to avoid duplicates
-        existing_names = set(Shikona.objects.values_list("name", flat=True))
-        existing_translit = set(
-            Shikona.objects.values_list("transliteration", flat=True)
+        # Get existing shikona in a single query (optimized)
+        existing = set(
+            Shikona.objects.values_list("name", "transliteration")
         )
+        existing_names = {name for name, _ in existing}
+        existing_translit = {trans for _, trans in existing}
 
-        max_attempts = count * 10  # Prevent infinite loops
+        max_attempts = count * MAX_GENERATION_ATTEMPTS_MULTIPLIER
         attempts = 0
 
         while len(options) < count and attempts < max_attempts:
             attempts += 1
 
             # Pick random prefix and suffix
-            prefix = random.choice(SHIKONA_PREFIXES)
-            suffix = random.choice(SHIKONA_SUFFIXES)
+            prefix = random.choice(SHIKONA_PREFIXES)  # noqa: S311
+            suffix = random.choice(SHIKONA_SUFFIXES)  # noqa: S311
 
             # Combine into name
             kanji = prefix[0] + suffix[0]
