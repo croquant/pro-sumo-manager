@@ -8,6 +8,7 @@ from django.http import HttpRequest
 from game.models import (
     Banzuke,
     BanzukeEntry,
+    Bout,
     Division,
     GameDate,
     Rank,
@@ -221,6 +222,49 @@ class BanzukeEntryAdmin(admin.ModelAdmin[BanzukeEntry]):
     def record_display(self, obj: BanzukeEntry) -> str:
         """Return the win-loss record."""
         return obj.record
+
+
+@admin.register(Bout)
+class BoutAdmin(admin.ModelAdmin[Bout]):
+    """Admin panel configuration for :class:`game.models.Bout`."""
+
+    list_display = (
+        "banzuke",
+        "day",
+        "east_rikishi_name",
+        "west_rikishi_name",
+        "winner_display",
+        "kimarite",
+        "excitement_level",
+    )
+    list_filter = ("banzuke", "day", "kimarite", "winner")
+    search_fields = (
+        "east_rikishi__shikona__transliteration",
+        "west_rikishi__shikona__transliteration",
+    )
+    ordering = ("banzuke", "day")
+    readonly_fields = ("commentary",)
+    list_select_related = (
+        "banzuke",
+        "east_rikishi__shikona",
+        "west_rikishi__shikona",
+    )
+
+    @admin.display(description="East")
+    def east_rikishi_name(self, obj: Bout) -> str:
+        """Return the east wrestler's ring name."""
+        return obj.east_rikishi.shikona.transliteration
+
+    @admin.display(description="West")
+    def west_rikishi_name(self, obj: Bout) -> str:
+        """Return the west wrestler's ring name."""
+        return obj.west_rikishi.shikona.transliteration
+
+    @admin.display(description="Winner")
+    def winner_display(self, obj: Bout) -> str:
+        """Return the winner's name with position."""
+        winner_name = obj.winner_rikishi.shikona.transliteration
+        return f"{winner_name} ({obj.winner})"
 
 
 @admin.register(TrainingSession)
