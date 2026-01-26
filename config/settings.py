@@ -189,8 +189,9 @@ AUTH_USER_MODEL = "accounts.User"
 # django-allauth settings
 SITE_ID = 1
 ACCOUNT_LOGIN_METHODS = {"email"}  # Use email for login
+# email* means required, username* means required
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "optional"  # Set to "mandatory" for production
+ACCOUNT_EMAIL_VERIFICATION = "optional" if DEBUG else "mandatory"
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"

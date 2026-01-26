@@ -1,6 +1,7 @@
 """Middleware for accounts app."""
 
 from collections.abc import Callable
+from urllib.parse import urlparse
 
 from django.http import HttpRequest, HttpResponse
 from django.urls import reverse_lazy
@@ -40,7 +41,8 @@ class HtmxAuthRedirectMiddleware:
 
         # Check if redirecting to login page
         location = response.get("Location", "")
-        if _LOGIN_URL not in location:
+        redirect_path = urlparse(location).path
+        if not redirect_path.startswith(_LOGIN_URL):
             return response
 
         # Return a 200 response with HX-Redirect header
