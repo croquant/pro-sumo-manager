@@ -1,0 +1,110 @@
+{% extends "account/base.html" %}
+{% load i18n %}
+
+{% block title %}Sign Up - Pro Sumo Manager{% endblock %}
+
+{% block auth_title %}Create Account{% endblock %}
+
+{% block auth_content %}
+<form method="post" action="{% url 'account_signup' %}" class="space-y-4">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error">
+        {% for error in form.non_field_errors %}
+        <span>{{ error }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="form-control">
+        <label class="label" for="id_email">
+            <span class="label-text">Email</span>
+        </label>
+        <input type="email"
+               name="email"
+               id="id_email"
+               placeholder="your@email.com"
+               class="input input-bordered w-full {% if form.email.errors %}input-error{% endif %}"
+               value="{{ form.email.value|default:'' }}"
+               required>
+        {% if form.email.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.email.errors.0 }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    <div class="form-control">
+        <label class="label" for="id_username">
+            <span class="label-text">Username</span>
+        </label>
+        <input type="text"
+               name="username"
+               id="id_username"
+               placeholder="Your display name"
+               class="input input-bordered w-full {% if form.username.errors %}input-error{% endif %}"
+               value="{{ form.username.value|default:'' }}"
+               required>
+        {% if form.username.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.username.errors.0 }}</span>
+        </label>
+        {% endif %}
+        <label class="label">
+            <span class="label-text-alt">This will be your display name in the game</span>
+        </label>
+    </div>
+
+    <div class="form-control">
+        <label class="label" for="id_password1">
+            <span class="label-text">Password</span>
+        </label>
+        <input type="password"
+               name="password1"
+               id="id_password1"
+               placeholder="Choose a strong password"
+               class="input input-bordered w-full {% if form.password1.errors %}input-error{% endif %}"
+               required>
+        {% if form.password1.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.password1.errors.0 }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    <div class="form-control">
+        <label class="label" for="id_password2">
+            <span class="label-text">Confirm Password</span>
+        </label>
+        <input type="password"
+               name="password2"
+               id="id_password2"
+               placeholder="Repeat your password"
+               class="input input-bordered w-full {% if form.password2.errors %}input-error{% endif %}"
+               required>
+        {% if form.password2.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.password2.errors.0 }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+    {% endif %}
+
+    <div class="form-control mt-6">
+        <button type="submit" class="btn btn-primary w-full">Create Account</button>
+    </div>
+</form>
+
+<div class="divider">OR</div>
+
+<div class="text-center">
+    <p class="text-sm">
+        Already have an account?
+        <a href="{% url 'account_login' %}" class="link link-primary">Sign in</a>
+    </p>
+</div>
+{% endblock %}

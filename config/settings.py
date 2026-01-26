@@ -63,9 +63,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "django_htmx",
     "django_cotton",
-    "game",
+    "accounts",
+    "game",  # game before allauth so our templates take precedence
+    "allauth",
+    "allauth.account",
 ]
 
 if DEBUG:
@@ -81,6 +85,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "accounts.middleware.HtmxAuthRedirectMiddleware",
 ]
 
 if DEBUG:
@@ -176,3 +182,19 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Test runner configuration
 # Use custom test runner that mocks OpenAI globally to prevent real API calls
 TEST_RUNNER = "tests.runner.OpenAIMockedTestRunner"
+
+# Authentication settings
+AUTH_USER_MODEL = "accounts.User"
+
+# django-allauth settings
+SITE_ID = 1
+ACCOUNT_LOGIN_METHODS = {"email"}  # Use email for login
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "optional"  # Set to "mandatory" for production
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+LOGIN_REDIRECT_URL = "/dashboard/"
+LOGOUT_REDIRECT_URL = "/"
+LOGIN_URL = "/accounts/login/"
+
+# Email backend (console for development)
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "django>=5.2.10,<6",
+    "django-allauth>=65.14.0",
     "django-cotton>=1.0.0",
     "django-htmx>=1.21.0",
     "django-stubs>=5.2.8",
@@ -36,7 +37,7 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "standard"
 
-include = ["config", "game", "libs", "tests"]
+include = ["accounts", "config", "game", "libs", "tests"]
 exclude = [
     ".venv",
     ".git",

@@ -1,0 +1,29 @@
+{% extends "account/base.html" %}
+{% load i18n %}
+
+{% block title %}Confirm Email - Pro Sumo Manager{% endblock %}
+
+{% block auth_title %}Confirm Email Address{% endblock %}
+
+{% block auth_content %}
+{% if confirmation %}
+<p class="text-center mb-6">
+    Please confirm that <strong>{{ confirmation.email_address.email }}</strong>
+    is your email address.
+</p>
+
+<form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+    {% csrf_token %}
+    <div class="form-control">
+        <button type="submit" class="btn btn-primary w-full">Confirm Email</button>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-error">
+    <span>This confirmation link is invalid or has expired.</span>
+</div>
+<div class="text-center mt-4">
+    <a href="{% url 'account_login' %}" class="btn btn-primary">Go to Sign In</a>
+</div>
+{% endif %}
+{% endblock %}

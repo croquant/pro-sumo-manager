@@ -9,10 +9,12 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-from game.views import index
+from game.views import dashboard, index
 
 urlpatterns = [
     path("", index, name="index"),
+    path("dashboard/", dashboard, name="dashboard"),
+    path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
 ]
 

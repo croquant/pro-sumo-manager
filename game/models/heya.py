@@ -1,5 +1,6 @@
 """Heya (stable) model for the game."""
 
+from django.conf import settings
 from django.db import models
 
 from game.models.gamedate import GameDate
@@ -27,6 +28,18 @@ class Heya(models.Model):
         related_name="heya_created_at",
         help_text="Date the stable was founded",
         verbose_name="Founded Date",
+    )
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="heya",
+        null=True,
+        blank=True,
+        help_text="Player who owns this stable (null for AI-controlled)",
+    )
+    is_player_controlled = models.BooleanField(
+        default=False,
+        help_text="Whether this stable is controlled by a player",
     )
 
     class Meta:
