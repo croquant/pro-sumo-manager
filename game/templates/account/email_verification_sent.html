@@ -1,0 +1,18 @@
+{% extends "account/base.html" %}
+{% load i18n %}
+
+{% block title %}Verify Your Email - Pro Sumo Manager{% endblock %}
+
+{% block auth_title %}Verify Your Email{% endblock %}
+
+{% block auth_content %}
+<div class="text-center space-y-4">
+    <p>
+        We've sent a verification email to your address.
+        Please click the link in the email to verify your account.
+    </p>
+    <p class="text-sm opacity-70">
+        If you don't see the email, check your spam folder.
+    </p>
+</div>
+{% endblock %}

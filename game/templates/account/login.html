@@ -1,0 +1,84 @@
+{% extends "account/base.html" %}
+{% load i18n %}
+
+{% block title %}Sign In - Pro Sumo Manager{% endblock %}
+
+{% block auth_title %}Sign In{% endblock %}
+
+{% block auth_content %}
+<form method="post" action="{% url 'account_login' %}" class="space-y-4">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error">
+        {% for error in form.non_field_errors %}
+        <span>{{ error }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="form-control">
+        <label class="label" for="id_login">
+            <span class="label-text">Email</span>
+        </label>
+        <input type="email"
+               name="login"
+               id="id_login"
+               placeholder="your@email.com"
+               class="input input-bordered w-full {% if form.login.errors %}input-error{% endif %}"
+               value="{{ form.login.value|default:'' }}"
+               required>
+        {% if form.login.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.login.errors.0 }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    <div class="form-control">
+        <label class="label" for="id_password">
+            <span class="label-text">Password</span>
+        </label>
+        <input type="password"
+               name="password"
+               id="id_password"
+               placeholder="Your password"
+               class="input input-bordered w-full {% if form.password.errors %}input-error{% endif %}"
+               required>
+        {% if form.password.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.password.errors.0 }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-2">
+            <input type="checkbox" name="remember" class="checkbox checkbox-sm">
+            <span class="label-text">Remember me</span>
+        </label>
+    </div>
+
+    {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+    {% endif %}
+
+    <div class="form-control mt-6">
+        <button type="submit" class="btn btn-primary w-full">Sign In</button>
+    </div>
+</form>
+
+<div class="divider">OR</div>
+
+<div class="text-center space-y-2">
+    <p class="text-sm">
+        <a href="{% url 'account_reset_password' %}" class="link link-primary">
+            Forgot your password?
+        </a>
+    </p>
+    <p class="text-sm">
+        Don't have an account?
+        <a href="{% url 'account_signup' %}" class="link link-primary">Sign up</a>
+    </p>
+</div>
+{% endblock %}

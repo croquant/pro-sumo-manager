@@ -1,5 +1,6 @@
 """Heya (stable) model for the game."""
 
+from django.conf import settings
 from django.db import models
 
 from game.models.gamedate import GameDate
@@ -28,6 +29,14 @@ class Heya(models.Model):
         help_text="Date the stable was founded",
         verbose_name="Founded Date",
     )
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="heya",
+        null=True,
+        blank=True,
+        help_text="Player who owns this stable (null for AI-controlled)",
+    )
 
     class Meta:
         """Model metadata."""
@@ -39,3 +48,8 @@ class Heya(models.Model):
     def __str__(self) -> str:
         """Return the stable name."""
         return self.name.transliteration
+
+    @property
+    def is_player_controlled(self) -> bool:
+        """Return whether this stable is controlled by a player."""
+        return self.owner is not None

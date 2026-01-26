@@ -1,11 +1,13 @@
 """Tests for the GameDate admin configuration."""
 
 from django.contrib.admin.sites import AdminSite
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
 from game.admin import GameDateAdmin
 from game.models import GameDate
+
+User = get_user_model()
 
 
 class GameDateAdminTests(TestCase):
