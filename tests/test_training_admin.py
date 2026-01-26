@@ -60,13 +60,17 @@ class TrainingSessionAdminTests(TestCase):
         """Should not allow editing."""
         request = self.factory.get("/admin/")
         self.assertFalse(self.admin.has_change_permission(request))
-        self.assertFalse(self.admin.has_change_permission(request, self.session))
+        self.assertFalse(
+            self.admin.has_change_permission(request, self.session)
+        )
 
     def test_has_delete_permission(self) -> None:
         """Should not allow deletion."""
         request = self.factory.get("/admin/")
         self.assertFalse(self.admin.has_delete_permission(request))
-        self.assertFalse(self.admin.has_delete_permission(request, self.session))
+        self.assertFalse(
+            self.admin.has_delete_permission(request, self.session)
+        )
 
     def test_list_display_fields(self) -> None:
         """Should have correct list display fields."""
