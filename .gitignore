@@ -23,5 +23,8 @@ static/css/tailwindcss
 static/css/daisyui.mjs
 static/css/output.css
 
+# Production static files
+staticfiles/
+
 # Misc
 .DS_Store
