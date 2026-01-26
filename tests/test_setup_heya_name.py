@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from game.models import GameDate, Heya, Shikona
 from game.services.shikona_service import ShikonaOption, ShikonaService
+from libs.generators.shikona import ShikonaGenerationError
 from libs.types.shikona import Shikona as ShikonaType
 
 User = get_user_model()
@@ -109,6 +110,59 @@ class TestShikonaService(TestCase):
         self.assertEqual(len(options), 3)
         names = [opt.name for opt in options]
         self.assertEqual(len(names), len(set(names)))
+
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_logs_warning_when_exhausted(
+        self, mock_gen_class: MagicMock
+    ) -> None:
+        """Test that warning is logged when fewer options than requested."""
+        mock_gen = mock_gen_class.return_value
+        # Return only duplicates after first option - exhausts max_attempts
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+        ] + [
+            _mock_shikona("大海", "Ōumi", "Great Sea")  # Duplicates
+            for _ in range(20)
+        ]
+
+        with self.assertLogs(
+            "game.services.shikona_service", level="WARNING"
+        ) as cm:
+            options = ShikonaService.generate_shikona_options(count=3)
+
+        # Should only get 1 option due to duplicates exhausting attempts
+        self.assertEqual(len(options), 1)
+        # Should have logged warning about limited options
+        self.assertTrue(
+            any("Could only generate" in msg for msg in cm.output)
+        )
+
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_handles_generation_errors(
+        self, mock_gen_class: MagicMock
+    ) -> None:
+        """Test that ShikonaGenerationError is caught and logged."""
+        mock_gen = mock_gen_class.return_value
+        # Mix of successful generations and errors
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+            ShikonaGenerationError("API error"),
+            _mock_shikona("若山", "Wakayama", "Young Mountain"),
+            ShikonaGenerationError("API error"),
+            _mock_shikona("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
+        with self.assertLogs(
+            "game.services.shikona_service", level="WARNING"
+        ) as cm:
+            options = ShikonaService.generate_shikona_options(count=3)
+
+        # Should get 3 options despite errors
+        self.assertEqual(len(options), 3)
+        # Should have logged warnings about failed generations
+        self.assertTrue(
+            any("Failed to generate shikona" in msg for msg in cm.output)
+        )
 
 
 class TestSetupHeyaNameView(TestCase):
