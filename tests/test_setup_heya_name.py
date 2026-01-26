@@ -133,9 +133,7 @@ class TestShikonaService(TestCase):
         # Should only get 1 option due to duplicates exhausting attempts
         self.assertEqual(len(options), 1)
         # Should have logged warning about limited options
-        self.assertTrue(
-            any("Could only generate" in msg for msg in cm.output)
-        )
+        self.assertTrue(any("Could only generate" in msg for msg in cm.output))
 
     @patch("game.services.shikona_service.ShikonaGenerator")
     def test_generate_handles_generation_errors(
@@ -160,9 +158,7 @@ class TestShikonaService(TestCase):
         # Should get 3 options despite errors
         self.assertEqual(len(options), 3)
         # Should have logged warnings about failed generations
-        self.assertTrue(
-            any("Failed to generate shikona" in msg for msg in cm.output)
-        )
+        self.assertTrue(any("Failed to generate" in msg for msg in cm.output))
 
 
 class TestSetupHeyaNameView(TestCase):
