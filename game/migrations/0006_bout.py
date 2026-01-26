@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('game', '0005_add_banzuke_constraints'),
+        ('game', '0004_remove_heya_is_player_controlled'),
     ]
 
     operations = [
