@@ -334,6 +334,87 @@ class TestShikonaServiceExhaustion(TestCase):
         self.assertEqual(len(options), 0)
 
 
+class TestLimitedOptionsWarning(TestCase):
+    """Tests for warning when options are limited."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",  # noqa: S106
+        )
+        self.client = Client()
+
+    def test_warning_shown_when_fewer_options_generated(self) -> None:
+        """Test that warning is shown when fewer than 3 options generated."""
+        from unittest.mock import patch
+
+        from game.services.shikona_service import ShikonaOption
+
+        self.client.force_login(self.user)
+
+        # Mock the service to return only 2 options
+        mock_options = [
+            ShikonaOption(name="大海", transliteration="Ōumi", interpretation="Great Sea"),
+            ShikonaOption(name="若山", transliteration="Wakayama", interpretation="Young Mountain"),
+        ]
+
+        with patch.object(
+            ShikonaService, "generate_shikona_options", return_value=mock_options
+        ):
+            response = self.client.get(reverse("setup_heya_name"))
+
+        self.assertEqual(response.status_code, 200)
+        # Check that warning message is shown
+        messages = list(response.context["messages"])
+        self.assertTrue(
+            any("limited" in str(m).lower() for m in messages)
+        )
+
+
+class TestIntegrityErrorHandling(TestCase):
+    """Tests for IntegrityError handling during heya creation."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",  # noqa: S106
+        )
+        self.client = Client()
+
+    def test_integrity_error_handled_gracefully(self) -> None:
+        """Test that IntegrityError from race condition is handled."""
+        from unittest.mock import patch
+
+        from django.db import IntegrityError
+
+        self.client.force_login(self.user)
+
+        # GET to generate options
+        self.client.get(reverse("setup_heya_name"))
+
+        # Mock Heya.objects.create to raise IntegrityError (simulating race)
+        with patch(
+            "game.views.Heya.objects.create",
+            side_effect=IntegrityError("duplicate key"),
+        ):
+            response = self.client.post(
+                reverse("setup_heya_name"),
+                {"selected_option": "0"},
+            )
+
+        # Should redirect back to setup page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("setup_heya_name"))
+
+        # Session should be cleared to force regeneration
+        session = self.client.session
+        self.assertNotIn("heya_options", session)
+
+
 class TestDashboardRedirect(TestCase):
     """Tests for dashboard redirect behavior."""
 
