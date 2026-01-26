@@ -158,6 +158,113 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
 
+class TestSetupHeyaNameEdgeCases(TestCase):
+    """Tests for edge cases in heya name selection."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",  # noqa: S106
+        )
+        self.client = Client()
+
+    def test_post_with_non_integer_selection_shows_error(self) -> None:
+        """Test that POST with non-integer selection triggers ValueError."""
+        self.client.force_login(self.user)
+
+        # First GET to generate options
+        self.client.get(reverse("setup_heya_name"))
+
+        # POST with non-integer value (triggers ValueError)
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "not_a_number"},
+        )
+
+        # Should redirect back to setup page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("setup_heya_name"))
+
+    def test_post_without_session_options_shows_error(self) -> None:
+        """Test that POST without session options triggers KeyError."""
+        self.client.force_login(self.user)
+
+        # Skip GET - directly POST without session (triggers KeyError on index)
+        # We need to manually set an empty session state
+        session = self.client.session
+        session["heya_options"] = []  # Empty list causes IndexError
+        session.save()
+
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "0"},
+        )
+
+        # Should redirect back to setup page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("setup_heya_name"))
+
+    def test_post_creates_game_date_if_none_exists(self) -> None:
+        """Test that POST initializes GameDate if none exists."""
+        self.client.force_login(self.user)
+
+        # Ensure no GameDate exists
+        GameDate.objects.all().delete()
+        self.assertEqual(GameDate.objects.count(), 0)
+
+        # GET to generate options
+        self.client.get(reverse("setup_heya_name"))
+
+        # POST to select first option
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "0"},
+        )
+
+        # Should succeed and create GameDate
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(GameDate.objects.count(), 1)
+
+        # User should have heya
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.heya)
+
+
+class TestShikonaServiceExhaustion(TestCase):
+    """Tests for ShikonaService exhaustion edge case."""
+
+    def test_generate_returns_fewer_when_combinations_exhausted(self) -> None:
+        """Test that generation returns fewer options when names exhausted."""
+        from game.services.shikona_service import (
+            SHIKONA_PREFIXES,
+            SHIKONA_SUFFIXES,
+        )
+
+        # Create all possible combinations in database
+        # Track used transliterations since they must be unique
+        used_translit: set[str] = set()
+        for prefix in SHIKONA_PREFIXES:
+            for suffix in SHIKONA_SUFFIXES:
+                kanji = prefix[0] + suffix[0]
+                romaji = prefix[1] + suffix[1]
+                meaning = f"{prefix[2]} {suffix[2]}"
+                # Skip if transliteration already used (some prefixes share)
+                if romaji in used_translit:
+                    continue
+                used_translit.add(romaji)
+                Shikona.objects.create(
+                    name=kanji,
+                    transliteration=romaji,
+                    interpretation=meaning,
+                )
+
+        # Now try to generate - should return empty list
+        options = ShikonaService.generate_shikona_options(count=3)
+        self.assertEqual(len(options), 0)
+
+
 class TestDashboardRedirect(TestCase):
     """Tests for dashboard redirect behavior."""
 
