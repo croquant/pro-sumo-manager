@@ -18,5 +18,10 @@ coverage.json
 # Prototypes and experimental code
 prototypes/
 
+# Tailwind CSS (standalone CLI and generated files)
+static/css/tailwindcss
+static/css/daisyui.mjs
+static/css/output.css
+
 # Misc
 .DS_Store

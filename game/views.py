@@ -1,3 +1,9 @@
 """Views for the game app."""
 
-from django.shortcuts import render  # noqa: F401
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
+
+
+def index(request: HttpRequest) -> HttpResponse:
+    """Landing page."""
+    return render(request, "game/index.html")

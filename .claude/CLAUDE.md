@@ -25,3 +25,22 @@ tests/      # pytest suite
 - Line length: 80 chars
 - Pre-commit runs: ruff, pyright, Django checks, tests
 - Coverage must not decrease
+
+## Frontend Stack
+
+- **CSS Build**: `./build-css.sh` (runs Tailwind watcher)
+- **Templates**: `game/templates/game/`
+- **Components**: `cotton/` (django-cotton)
+- **Partials**: `game/templates/game/partials/` (HTMX responses)
+
+### Technologies
+
+- HTMX for server interactions (no JavaScript needed)
+- Tailwind CSS v4 + DaisyUI for styling
+- django-cotton for reusable components
+
+### Development
+
+Run in two terminals:
+1. `./build-css.sh` - CSS watcher
+2. `uv run python manage.py runserver` - Django server
