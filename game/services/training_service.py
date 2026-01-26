@@ -61,19 +61,18 @@ class TrainingService:
 
         current_stat_value = getattr(rikishi, stat)
 
-        # Check if stat is already at max
-        if current_stat_value >= MAX_STAT_VALUE:
-            msg = (
-                f"Stat '{stat}' is already at maximum value "
-                f"({MAX_STAT_VALUE})."
-            )
-            raise ValidationError(msg)
-
-        # Check if training would exceed potential
+        # Check potential first for clearer error messages
         if rikishi.current >= rikishi.potential:
             msg = (
                 f"Rikishi has reached their potential ({rikishi.potential}). "
                 "Cannot train further."
+            )
+            raise ValidationError(msg)
+
+        # Check if stat is already at max
+        if current_stat_value >= MAX_STAT_VALUE:
+            msg = (
+                f"Stat '{stat}' is already at maximum value ({MAX_STAT_VALUE})."
             )
             raise ValidationError(msg)
 
@@ -96,7 +95,8 @@ class TrainingService:
         Train a specific stat for a rikishi.
 
         Deducts XP, increases the stat by 1, and creates a training
-        session record.
+        session record. Uses select_for_update() to prevent race
+        conditions in concurrent training attempts.
 
         Args:
         ----
@@ -113,7 +113,10 @@ class TrainingService:
             ValidationError: If training is not possible.
 
         """
-        # Validate training is possible
+        # Lock the rikishi row to prevent race conditions
+        rikishi = Rikishi.objects.select_for_update().get(pk=rikishi.pk)
+
+        # Validate training is possible (with fresh, locked data)
         TrainingService.validate_can_train(rikishi, stat)
 
         # Get current values
