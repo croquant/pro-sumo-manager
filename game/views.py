@@ -102,7 +102,8 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
             f"Welcome to {shikona.transliteration} stable!",
         )
 
-        # TODO: Redirect to draft pool when implemented
+        # TODO(croquant): Redirect to draft pool when implemented
+        # https://github.com/croquant/pro-sumo-manager/issues/77
         return redirect("dashboard")
 
     except (ValueError, KeyError):

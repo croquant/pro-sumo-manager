@@ -13,18 +13,18 @@ User = get_user_model()
 class TestShikonaService(TestCase):
     """Tests for the ShikonaService."""
 
-    def test_generate_shikona_options_returns_three_options(self):
+    def test_generate_shikona_options_returns_three_options(self) -> None:
         """Test that generate_shikona_options returns 3 unique options."""
         options = ShikonaService.generate_shikona_options(count=3)
         self.assertEqual(len(options), 3)
 
-    def test_generate_shikona_options_are_unique(self):
+    def test_generate_shikona_options_are_unique(self) -> None:
         """Test that generated options have unique names."""
         options = ShikonaService.generate_shikona_options(count=3)
         names = [opt.name for opt in options]
         self.assertEqual(len(names), len(set(names)))
 
-    def test_generate_shikona_options_have_all_fields(self):
+    def test_generate_shikona_options_have_all_fields(self) -> None:
         """Test that generated options have all required fields."""
         options = ShikonaService.generate_shikona_options(count=3)
         for opt in options:
@@ -32,7 +32,7 @@ class TestShikonaService(TestCase):
             self.assertTrue(opt.transliteration)
             self.assertTrue(opt.interpretation)
 
-    def test_create_shikona_from_option(self):
+    def test_create_shikona_from_option(self) -> None:
         """Test creating a Shikona model from an option."""
         options = ShikonaService.generate_shikona_options(count=1)
         option = options[0]
@@ -47,29 +47,29 @@ class TestShikonaService(TestCase):
 class TestSetupHeyaNameView(TestCase):
     """Tests for the setup_heya_name view."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.user = User.objects.create_user(
             username="testuser",
             email="test@example.com",
-            password="testpass123",
+            password="testpass123",  # noqa: S106
         )
         self.client = Client()
 
-    def test_unauthenticated_user_redirected_to_login(self):
+    def test_unauthenticated_user_redirected_to_login(self) -> None:
         """Test that unauthenticated users are redirected to login."""
         response = self.client.get(reverse("setup_heya_name"))
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
-    def test_authenticated_user_can_access_page(self):
+    def test_authenticated_user_can_access_page(self) -> None:
         """Test that authenticated users without heya can access the page."""
         self.client.force_login(self.user)
         response = self.client.get(reverse("setup_heya_name"))
         self.assertEqual(response.status_code, 200)
         self.assertIn("options", response.context)
 
-    def test_page_shows_three_options(self):
+    def test_page_shows_three_options(self) -> None:
         """Test that the page displays 3 shikona options."""
         self.client.force_login(self.user)
         response = self.client.get(reverse("setup_heya_name"))
@@ -77,7 +77,7 @@ class TestSetupHeyaNameView(TestCase):
         options = response.context["options"]
         self.assertEqual(len(options), 3)
 
-    def test_options_stored_in_session(self):
+    def test_options_stored_in_session(self) -> None:
         """Test that options are stored in session for consistency."""
         self.client.force_login(self.user)
         self.client.get(reverse("setup_heya_name"))
@@ -85,7 +85,7 @@ class TestSetupHeyaNameView(TestCase):
         self.assertIn("heya_options", session)
         self.assertEqual(len(session["heya_options"]), 3)
 
-    def test_user_with_heya_redirected_to_dashboard(self):
+    def test_user_with_heya_redirected_to_dashboard(self) -> None:
         """Test that users with heya are redirected away from setup."""
         # Create heya for user
         shikona = Shikona.objects.create(
@@ -105,7 +105,7 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("dashboard"))
 
-    def test_post_creates_heya(self):
+    def test_post_creates_heya(self) -> None:
         """Test that POST creates a heya for the user."""
         self.client.force_login(self.user)
 
@@ -126,7 +126,7 @@ class TestSetupHeyaNameView(TestCase):
         self.assertTrue(hasattr(self.user, "heya"))
         self.assertIsNotNone(self.user.heya)
 
-    def test_post_without_selection_shows_error(self):
+    def test_post_without_selection_shows_error(self) -> None:
         """Test that POST without selection shows error."""
         self.client.force_login(self.user)
 
@@ -140,7 +140,7 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
-    def test_post_with_invalid_selection_shows_error(self):
+    def test_post_with_invalid_selection_shows_error(self) -> None:
         """Test that POST with invalid selection shows error."""
         self.client.force_login(self.user)
 
@@ -161,23 +161,23 @@ class TestSetupHeyaNameView(TestCase):
 class TestDashboardRedirect(TestCase):
     """Tests for dashboard redirect behavior."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.user = User.objects.create_user(
             username="testuser",
             email="test@example.com",
-            password="testpass123",
+            password="testpass123",  # noqa: S106
         )
         self.client = Client()
 
-    def test_dashboard_redirects_user_without_heya(self):
+    def test_dashboard_redirects_user_without_heya(self) -> None:
         """Test that dashboard redirects users without heya to setup."""
         self.client.force_login(self.user)
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
-    def test_dashboard_accessible_with_heya(self):
+    def test_dashboard_accessible_with_heya(self) -> None:
         """Test that users with heya can access dashboard."""
         # Create heya for user
         shikona = Shikona.objects.create(
