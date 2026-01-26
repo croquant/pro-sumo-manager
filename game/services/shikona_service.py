@@ -86,9 +86,7 @@ class ShikonaService:
         used_names: set[str] = set()
 
         # Get existing shikona in a single query (optimized)
-        existing = set(
-            Shikona.objects.values_list("name", "transliteration")
-        )
+        existing = set(Shikona.objects.values_list("name", "transliteration"))
         existing_names = {name for name, _ in existing}
         existing_translit = {trans for _, trans in existing}
 

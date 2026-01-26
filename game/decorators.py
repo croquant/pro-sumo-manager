@@ -40,8 +40,7 @@ def heya_required(view_func: ViewFunc) -> ViewFunc:
 
         @login_required
         @heya_required
-        def dashboard(request):
-            ...
+        def dashboard(request): ...
 
     """
 
@@ -67,8 +66,7 @@ def setup_in_progress(view_func: ViewFunc) -> ViewFunc:
 
         @login_required
         @setup_in_progress
-        def setup_heya_name(request):
-            ...
+        def setup_heya_name(request): ...
 
     """
 
