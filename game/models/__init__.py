@@ -8,6 +8,7 @@ from .rank import Rank
 from .rikishi import Rikishi
 from .shikona import Shikona
 from .shusshin import Shusshin
+from .training import TrainingSession
 
 __all__ = [
     "Banzuke",
@@ -19,4 +20,5 @@ __all__ = [
     "Rikishi",
     "Shikona",
     "Shusshin",
+    "TrainingSession",
 ]
