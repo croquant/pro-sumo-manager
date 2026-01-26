@@ -3,7 +3,10 @@
 from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
-from django.urls import reverse
+from django.urls import reverse_lazy
+
+# Cache the login URL at module level for performance
+_LOGIN_URL = str(reverse_lazy("account_login"))
 
 
 class HtmxAuthRedirectMiddleware:
@@ -26,18 +29,22 @@ class HtmxAuthRedirectMiddleware:
         """Process the request and response."""
         response = self.get_response(request)
 
-        # Check if this is an HTMX request that got redirected to login
-        is_htmx = getattr(request, "htmx", None)
-        login_url = reverse("account_login")
-        if (
-            is_htmx
-            and response.status_code == 302
-            and login_url in response.get("Location", "")
-        ):
-            # Return a 200 response with HX-Redirect header
-            # This tells HTMX to do a full page redirect
-            redirect_response = HttpResponse(status=200)
-            redirect_response["HX-Redirect"] = response.get("Location", "")
-            return redirect_response
+        # Early return for non-redirect responses (most common case)
+        if response.status_code != 302:
+            return response
 
-        return response
+        # Check if this is an HTMX request
+        is_htmx = getattr(request, "htmx", None)
+        if not is_htmx:
+            return response
+
+        # Check if redirecting to login page
+        location = response.get("Location", "")
+        if _LOGIN_URL not in location:
+            return response
+
+        # Return a 200 response with HX-Redirect header
+        # This tells HTMX to do a full page redirect
+        redirect_response = HttpResponse(status=200)
+        redirect_response["HX-Redirect"] = location
+        return redirect_response

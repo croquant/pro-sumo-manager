@@ -247,3 +247,38 @@ class HeyaUserRelationshipTests(TestCase):
 
         self.assertEqual(heya.owner, user)
         self.assertTrue(heya.is_player_controlled)
+
+
+class HtmxAuthRedirectMiddlewareTests(TestCase):
+    """Tests for HtmxAuthRedirectMiddleware."""
+
+    def test_non_htmx_request_gets_normal_redirect(self) -> None:
+        """Non-HTMX requests should get standard 302 redirect."""
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_htmx_request_gets_hx_redirect_header(self) -> None:
+        """HTMX requests should get 200 with HX-Redirect header."""
+        response = self.client.get(
+            reverse("dashboard"),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("HX-Redirect", response.headers)
+        self.assertIn("/accounts/login/", response.headers["HX-Redirect"])
+
+    def test_htmx_authenticated_request_no_redirect(self) -> None:
+        """Authenticated HTMX requests should access dashboard normally."""
+        user = User.objects.create_user(
+            email="test@example.com",
+            username="testuser",
+            password="testpass123",  # noqa: S106
+        )
+        self.client.force_login(user)
+        response = self.client.get(
+            reverse("dashboard"),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("HX-Redirect", response.headers)

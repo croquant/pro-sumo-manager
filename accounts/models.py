@@ -17,8 +17,7 @@ class User(AbstractUser):
         help_text="Email address used for login",
     )
 
-    # Override username to make it optional for initial signup
-    # but still required for game display
+    # Username is required and used as the display name in the game
     username = models.CharField(
         max_length=150,
         unique=True,
