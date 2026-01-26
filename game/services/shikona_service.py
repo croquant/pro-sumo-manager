@@ -70,8 +70,7 @@ class ShikonaService:
                 if (
                     shikona.shikona not in existing_names
                     and shikona.transliteration not in existing_translit
-                    and shikona.shikona
-                    not in {opt.name for opt in options}
+                    and shikona.shikona not in {opt.name for opt in options}
                 ):
                     options.append(
                         ShikonaOption(
