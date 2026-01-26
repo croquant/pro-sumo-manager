@@ -85,6 +85,20 @@ class TestSetupHeyaNameView(TestCase):
         self.assertIn("heya_options", session)
         self.assertEqual(len(session["heya_options"]), 3)
 
+    def test_options_persist_across_page_visits(self) -> None:
+        """Test that options don't change when visiting page multiple times."""
+        self.client.force_login(self.user)
+
+        # First visit
+        self.client.get(reverse("setup_heya_name"))
+        first_options = list(self.client.session["heya_options"])
+
+        # Second visit - should return same options
+        self.client.get(reverse("setup_heya_name"))
+        second_options = list(self.client.session["heya_options"])
+
+        self.assertEqual(first_options, second_options)
+
     def test_user_with_heya_redirected_to_dashboard(self) -> None:
         """Test that users with heya are redirected away from setup."""
         # Create heya for user
@@ -126,6 +140,30 @@ class TestSetupHeyaNameView(TestCase):
         self.assertTrue(hasattr(self.user, "heya"))
         self.assertIsNotNone(self.user.heya)
 
+    def test_post_creates_heya_with_existing_game_date(self) -> None:
+        """Test that POST uses existing game date when available."""
+        # Pre-create a game date
+        game_date = GameDate.objects.create(year=5, month=3, day=15)
+
+        self.client.force_login(self.user)
+
+        # First GET to generate options
+        self.client.get(reverse("setup_heya_name"))
+
+        # POST to select second option
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "1"},
+        )
+
+        # Should redirect to dashboard
+        self.assertEqual(response.status_code, 302)
+
+        # User should now have a heya with the existing game date
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.heya)
+        self.assertEqual(self.user.heya.created_at, game_date)
+
     def test_post_without_selection_shows_error(self) -> None:
         """Test that POST without selection shows error."""
         self.client.force_login(self.user)
@@ -151,6 +189,37 @@ class TestSetupHeyaNameView(TestCase):
         response = self.client.post(
             reverse("setup_heya_name"),
             {"selected_option": "99"},
+        )
+
+        # Should redirect back to setup page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("setup_heya_name"))
+
+    def test_post_without_session_options_shows_error(self) -> None:
+        """Test that POST without session options triggers KeyError handling."""
+        self.client.force_login(self.user)
+
+        # POST directly without GET (no session options)
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "0"},
+        )
+
+        # Should redirect back to setup page
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("setup_heya_name"))
+
+    def test_post_with_non_numeric_selection_shows_error(self) -> None:
+        """Test that POST with non-numeric selection triggers ValueError."""
+        self.client.force_login(self.user)
+
+        # First GET to generate options
+        self.client.get(reverse("setup_heya_name"))
+
+        # POST with non-numeric selection
+        response = self.client.post(
+            reverse("setup_heya_name"),
+            {"selected_option": "abc"},
         )
 
         # Should redirect back to setup page
