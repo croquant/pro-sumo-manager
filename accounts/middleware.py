@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
+from django.urls import reverse
 
 
 class HtmxAuthRedirectMiddleware:
@@ -27,10 +28,11 @@ class HtmxAuthRedirectMiddleware:
 
         # Check if this is an HTMX request that got redirected to login
         is_htmx = getattr(request, "htmx", None)
+        login_url = reverse("account_login")
         if (
             is_htmx
             and response.status_code == 302
-            and "/accounts/login/" in response.get("Location", "")
+            and login_url in response.get("Location", "")
         ):
             # Return a 200 response with HX-Redirect header
             # This tells HTMX to do a full page redirect

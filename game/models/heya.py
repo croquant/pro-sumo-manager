@@ -37,10 +37,6 @@ class Heya(models.Model):
         blank=True,
         help_text="Player who owns this stable (null for AI-controlled)",
     )
-    is_player_controlled = models.BooleanField(
-        default=False,
-        help_text="Whether this stable is controlled by a player",
-    )
 
     class Meta:
         """Model metadata."""
@@ -52,3 +48,8 @@ class Heya(models.Model):
     def __str__(self) -> str:
         """Return the stable name."""
         return self.name.transliteration
+
+    @property
+    def is_player_controlled(self) -> bool:
+        """Return whether this stable is controlled by a player."""
+        return self.owner is not None

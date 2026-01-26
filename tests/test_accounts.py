@@ -204,3 +204,46 @@ class LoginFlowTests(TestCase):
         )
         # Should stay on login page
         self.assertEqual(response.status_code, 200)
+
+
+class HeyaUserRelationshipTests(TestCase):
+    """Tests for Heya-User ownership relationship."""
+
+    def test_heya_without_owner_is_not_player_controlled(self) -> None:
+        """Heya without owner should not be player controlled."""
+        from game.models import GameDate, Heya, Shikona
+
+        shikona = Shikona.objects.create(
+            name="宮城野",
+            transliteration="Miyagino",
+            interpretation="Miyagi field",
+        )
+        game_date = GameDate.objects.create(year=1, month=1, day=1)
+        heya = Heya.objects.create(name=shikona, created_at=game_date)
+
+        self.assertIsNone(heya.owner)
+        self.assertFalse(heya.is_player_controlled)
+
+    def test_heya_with_owner_is_player_controlled(self) -> None:
+        """Heya with owner should be player controlled."""
+        from game.models import GameDate, Heya, Shikona
+
+        user = User.objects.create_user(
+            email="player@example.com",
+            username="player",
+            password="testpass123",  # noqa: S106
+        )
+        shikona = Shikona.objects.create(
+            name="境川",
+            transliteration="Sakaigawa",
+            interpretation="Border river",
+        )
+        game_date = GameDate.objects.create(year=1, month=1, day=2)
+        heya = Heya.objects.create(
+            name=shikona,
+            created_at=game_date,
+            owner=user,
+        )
+
+        self.assertEqual(heya.owner, user)
+        self.assertTrue(heya.is_player_controlled)

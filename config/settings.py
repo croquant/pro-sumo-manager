@@ -196,5 +196,8 @@ LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
 
-# Email backend (console for development)
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email backend (console for development, configure via env for production)
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
