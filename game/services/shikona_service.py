@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-import random
+import logging
 from dataclasses import dataclass
 
-from game.models import Shikona
+from game.models import Shikona as ShikonaModel
+from libs.generators.shikona import ShikonaGenerationError, ShikonaGenerator
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -15,48 +18,6 @@ class ShikonaOption:
     name: str  # Japanese kanji
     transliteration: str  # Romaji
     interpretation: str  # Meaning
-
-
-# Shikona components for generation
-# Format: (kanji, romaji, meaning)
-SHIKONA_PREFIXES = [
-    ("大", "Ō", "Great"),
-    ("若", "Waka", "Young"),
-    ("琴", "Koto", "Harp"),
-    ("朝", "Asa", "Morning"),
-    ("隆", "Taka", "Noble"),
-    ("照", "Teru", "Shining"),
-    ("霧", "Kiri", "Mist"),
-    ("千", "Chi", "Thousand"),
-    ("栃", "Tochi", "Horse chestnut"),
-    ("高", "Taka", "High"),
-    ("白", "Haku", "White"),
-    ("北", "Kita", "North"),
-    ("玉", "Tama", "Jewel"),
-    ("清", "Kiyo", "Pure"),
-    ("双", "Futago", "Twin"),
-]
-
-SHIKONA_SUFFIXES = [
-    ("海", "umi", "Sea"),
-    ("山", "yama", "Mountain"),
-    ("川", "gawa", "River"),
-    ("龍", "ryū", "Dragon"),
-    ("島", "shima", "Island"),
-    ("風", "kaze", "Wind"),
-    ("雲", "kumo", "Cloud"),
-    ("富士", "fuji", "Mount Fuji"),
-    ("桜", "zakura", "Cherry blossom"),
-    ("鵬", "hō", "Phoenix"),
-    ("乃花", "nohana", "Flower"),
-    ("錦", "nishiki", "Brocade"),
-    ("光", "hikari", "Light"),
-    ("岩", "iwa", "Rock"),
-    ("嶽", "dake", "Peak"),
-]
-
-# Maximum attempts multiplier for name generation
-MAX_GENERATION_ATTEMPTS_MULTIPLIER = 10
 
 
 class ShikonaService:
@@ -72,6 +33,9 @@ class ShikonaService:
         """
         Generate unique shikona options for heya name selection.
 
+        Uses the existing ShikonaGenerator which leverages OpenAI for
+        authentic romanization and meaningful interpretations.
+
         Args:
         ----
             count: Number of unique options to generate (default: 3).
@@ -79,51 +43,63 @@ class ShikonaService:
         Returns:
         -------
             List of ShikonaOption instances with unique names.
-            May return fewer than requested if combinations are exhausted.
+            May return fewer than requested if generation fails.
 
         """
         options: list[ShikonaOption] = []
-        used_names: set[str] = set()
 
-        # Get existing shikona in a single query (optimized)
-        existing = set(Shikona.objects.values_list("name", "transliteration"))
-        existing_names = {name for name, _ in existing}
-        existing_translit = {trans for _, trans in existing}
+        # Get existing shikona names to avoid duplicates
+        existing_names = set(
+            ShikonaModel.objects.values_list("name", flat=True)
+        )
+        existing_translit = set(
+            ShikonaModel.objects.values_list("transliteration", flat=True)
+        )
 
-        max_attempts = count * MAX_GENERATION_ATTEMPTS_MULTIPLIER
-        attempts = 0
+        generator = ShikonaGenerator()
+        max_attempts = count * 3  # Allow some retries for duplicates
 
-        while len(options) < count and attempts < max_attempts:
-            attempts += 1
+        for _ in range(max_attempts):
+            if len(options) >= count:
+                break
 
-            # Pick random prefix and suffix
-            prefix = random.choice(SHIKONA_PREFIXES)  # noqa: S311
-            suffix = random.choice(SHIKONA_SUFFIXES)  # noqa: S311
+            try:
+                shikona = generator.generate_single()
 
-            # Combine into name
-            kanji = prefix[0] + suffix[0]
-            romaji = prefix[1] + suffix[1]
-            meaning = f"{prefix[2]} {suffix[2]}"
-
-            # Check uniqueness
-            if (
-                kanji not in used_names
-                and kanji not in existing_names
-                and romaji not in existing_translit
-            ):
-                used_names.add(kanji)
-                options.append(
-                    ShikonaOption(
-                        name=kanji,
-                        transliteration=romaji,
-                        interpretation=meaning,
+                # Check uniqueness
+                if (
+                    shikona.shikona not in existing_names
+                    and shikona.transliteration not in existing_translit
+                    and shikona.shikona
+                    not in {opt.name for opt in options}
+                ):
+                    options.append(
+                        ShikonaOption(
+                            name=shikona.shikona,
+                            transliteration=shikona.transliteration,
+                            interpretation=shikona.interpretation,
+                        )
                     )
-                )
+                    logger.info(
+                        "Generated shikona option: %s (%s)",
+                        shikona.shikona,
+                        shikona.transliteration,
+                    )
+            except ShikonaGenerationError as e:
+                logger.warning("Failed to generate shikona: %s", e)
+                continue
+
+        if len(options) < count:
+            logger.warning(
+                "Could only generate %d/%d shikona options",
+                len(options),
+                count,
+            )
 
         return options
 
     @staticmethod
-    def create_shikona_from_option(option: ShikonaOption) -> Shikona:
+    def create_shikona_from_option(option: ShikonaOption) -> ShikonaModel:
         """
         Create a Shikona model instance from a ShikonaOption.
 
@@ -136,7 +112,7 @@ class ShikonaService:
             The newly created Shikona instance.
 
         """
-        return Shikona.objects.create(
+        return ShikonaModel.objects.create(
             name=option.name,
             transliteration=option.transliteration,
             interpretation=option.interpretation,

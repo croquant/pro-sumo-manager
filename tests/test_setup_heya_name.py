@@ -1,39 +1,89 @@
 """Tests for the heya name selection setup flow."""
 
+from unittest.mock import MagicMock, patch
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from game.models import GameDate, Heya, Shikona
-from game.services.shikona_service import ShikonaService
+from game.services.shikona_service import ShikonaOption, ShikonaService
+from libs.types.shikona import Shikona as ShikonaType
 
 User = get_user_model()
+
+
+def _mock_shikona(name: str, translit: str, interp: str) -> ShikonaType:
+    """Create a mock Shikona type for testing."""
+    return ShikonaType(
+        shikona=name,
+        transliteration=translit,
+        interpretation=interp,
+    )
 
 
 class TestShikonaService(TestCase):
     """Tests for the ShikonaService."""
 
-    def test_generate_shikona_options_returns_three_options(self) -> None:
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_shikona_options_returns_three_options(
+        self, mock_gen_class: MagicMock
+    ) -> None:
         """Test that generate_shikona_options returns 3 unique options."""
+        mock_gen = mock_gen_class.return_value
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+            _mock_shikona("若山", "Wakayama", "Young Mountain"),
+            _mock_shikona("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         options = ShikonaService.generate_shikona_options(count=3)
         self.assertEqual(len(options), 3)
 
-    def test_generate_shikona_options_are_unique(self) -> None:
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_shikona_options_are_unique(
+        self, mock_gen_class: MagicMock
+    ) -> None:
         """Test that generated options have unique names."""
+        mock_gen = mock_gen_class.return_value
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+            _mock_shikona("若山", "Wakayama", "Young Mountain"),
+            _mock_shikona("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         options = ShikonaService.generate_shikona_options(count=3)
         names = [opt.name for opt in options]
         self.assertEqual(len(names), len(set(names)))
 
-    def test_generate_shikona_options_have_all_fields(self) -> None:
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_shikona_options_have_all_fields(
+        self, mock_gen_class: MagicMock
+    ) -> None:
         """Test that generated options have all required fields."""
+        mock_gen = mock_gen_class.return_value
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+            _mock_shikona("若山", "Wakayama", "Young Mountain"),
+            _mock_shikona("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         options = ShikonaService.generate_shikona_options(count=3)
         for opt in options:
             self.assertTrue(opt.name)
             self.assertTrue(opt.transliteration)
             self.assertTrue(opt.interpretation)
 
-    def test_create_shikona_from_option(self) -> None:
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_create_shikona_from_option(
+        self, mock_gen_class: MagicMock
+    ) -> None:
         """Test creating a Shikona model from an option."""
+        mock_gen = mock_gen_class.return_value
+        mock_gen.generate_single.return_value = _mock_shikona(
+            "大海", "Ōumi", "Great Sea"
+        )
+
         options = ShikonaService.generate_shikona_options(count=1)
         option = options[0]
         shikona = ShikonaService.create_shikona_from_option(option)
@@ -42,6 +92,23 @@ class TestShikonaService(TestCase):
         self.assertEqual(shikona.name, option.name)
         self.assertEqual(shikona.transliteration, option.transliteration)
         self.assertEqual(shikona.interpretation, option.interpretation)
+
+    @patch("game.services.shikona_service.ShikonaGenerator")
+    def test_generate_skips_duplicates(self, mock_gen_class: MagicMock) -> None:
+        """Test that duplicate names are skipped."""
+        mock_gen = mock_gen_class.return_value
+        # First call returns duplicate, should be skipped
+        mock_gen.generate_single.side_effect = [
+            _mock_shikona("大海", "Ōumi", "Great Sea"),
+            _mock_shikona("大海", "Ōumi", "Great Sea"),  # Duplicate
+            _mock_shikona("若山", "Wakayama", "Young Mountain"),
+            _mock_shikona("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
+        options = ShikonaService.generate_shikona_options(count=3)
+        self.assertEqual(len(options), 3)
+        names = [opt.name for opt in options]
+        self.assertEqual(len(names), len(set(names)))
 
 
 class TestSetupHeyaNameView(TestCase):
@@ -62,42 +129,76 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
-    def test_authenticated_user_can_access_page(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_authenticated_user_can_access_page(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that authenticated users without heya can access the page."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
         response = self.client.get(reverse("setup_heya_name"))
         self.assertEqual(response.status_code, 200)
         self.assertIn("options", response.context)
 
-    def test_page_shows_three_options(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_page_shows_three_options(self, mock_gen: MagicMock) -> None:
         """Test that the page displays 3 shikona options."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
         response = self.client.get(reverse("setup_heya_name"))
         self.assertEqual(response.status_code, 200)
         options = response.context["options"]
         self.assertEqual(len(options), 3)
 
-    def test_options_stored_in_session(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_options_stored_in_session(self, mock_gen: MagicMock) -> None:
         """Test that options are stored in session for consistency."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
         self.client.get(reverse("setup_heya_name"))
         session = self.client.session
         self.assertIn("heya_options", session)
         self.assertEqual(len(session["heya_options"]), 3)
 
-    def test_options_persist_across_page_visits(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_options_persist_across_page_visits(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that options don't change when visiting page multiple times."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # First visit
         self.client.get(reverse("setup_heya_name"))
         first_options = list(self.client.session["heya_options"])
 
-        # Second visit - should return same options
+        # Second visit - should return same options (from session)
         self.client.get(reverse("setup_heya_name"))
         second_options = list(self.client.session["heya_options"])
 
         self.assertEqual(first_options, second_options)
+        # Generator should only be called once
+        mock_gen.assert_called_once()
 
     def test_user_with_heya_redirected_to_dashboard(self) -> None:
         """Test that users with heya are redirected away from setup."""
@@ -119,8 +220,15 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("dashboard"))
 
-    def test_post_creates_heya(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_creates_heya(self, mock_gen: MagicMock) -> None:
         """Test that POST creates a heya for the user."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # First GET to generate options
@@ -140,8 +248,17 @@ class TestSetupHeyaNameView(TestCase):
         self.assertTrue(hasattr(self.user, "heya"))
         self.assertIsNotNone(self.user.heya)
 
-    def test_post_creates_heya_with_existing_game_date(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_creates_heya_with_existing_game_date(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that POST uses existing game date when available."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         # Pre-create a game date
         game_date = GameDate.objects.create(year=5, month=3, day=15)
 
@@ -164,8 +281,17 @@ class TestSetupHeyaNameView(TestCase):
         self.assertIsNotNone(self.user.heya)
         self.assertEqual(self.user.heya.created_at, game_date)
 
-    def test_post_without_selection_shows_error(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_without_selection_shows_error(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that POST without selection shows error."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # First GET to generate options
@@ -178,8 +304,17 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
-    def test_post_with_invalid_selection_shows_error(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_with_invalid_selection_shows_error(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that POST with invalid selection shows error."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # First GET to generate options
@@ -196,7 +331,7 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
     def test_post_without_session_options_shows_error(self) -> None:
-        """Test that POST without session options triggers KeyError handling."""
+        """Test that POST without session options triggers error handling."""
         self.client.force_login(self.user)
 
         # POST directly without GET (no session options)
@@ -209,8 +344,17 @@ class TestSetupHeyaNameView(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
-    def test_post_with_non_numeric_selection_shows_error(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_with_non_numeric_selection_shows_error(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that POST with non-numeric selection triggers ValueError."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # First GET to generate options
@@ -239,44 +383,17 @@ class TestSetupHeyaNameEdgeCases(TestCase):
         )
         self.client = Client()
 
-    def test_post_with_non_integer_selection_shows_error(self) -> None:
-        """Test that POST with non-integer selection triggers ValueError."""
-        self.client.force_login(self.user)
-
-        # First GET to generate options
-        self.client.get(reverse("setup_heya_name"))
-
-        # POST with non-integer value (triggers ValueError)
-        response = self.client.post(
-            reverse("setup_heya_name"),
-            {"selected_option": "not_a_number"},
-        )
-
-        # Should redirect back to setup page
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("setup_heya_name"))
-
-    def test_post_without_session_options_shows_error(self) -> None:
-        """Test that POST without session options triggers KeyError."""
-        self.client.force_login(self.user)
-
-        # Skip GET - directly POST without session (triggers KeyError on index)
-        # We need to manually set an empty session state
-        session = self.client.session
-        session["heya_options"] = []  # Empty list causes IndexError
-        session.save()
-
-        response = self.client.post(
-            reverse("setup_heya_name"),
-            {"selected_option": "0"},
-        )
-
-        # Should redirect back to setup page
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("setup_heya_name"))
-
-    def test_post_creates_game_date_if_none_exists(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_post_creates_game_date_if_none_exists(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that POST initializes GameDate if none exists."""
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
+
         self.client.force_login(self.user)
 
         # Ensure no GameDate exists
@@ -301,39 +418,6 @@ class TestSetupHeyaNameEdgeCases(TestCase):
         self.assertIsNotNone(self.user.heya)
 
 
-class TestShikonaServiceExhaustion(TestCase):
-    """Tests for ShikonaService exhaustion edge case."""
-
-    def test_generate_returns_fewer_when_combinations_exhausted(self) -> None:
-        """Test that generation returns fewer options when names exhausted."""
-        from game.services.shikona_service import (
-            SHIKONA_PREFIXES,
-            SHIKONA_SUFFIXES,
-        )
-
-        # Create all possible combinations in database
-        # Track used transliterations since they must be unique
-        used_translit: set[str] = set()
-        for prefix in SHIKONA_PREFIXES:
-            for suffix in SHIKONA_SUFFIXES:
-                kanji = prefix[0] + suffix[0]
-                romaji = prefix[1] + suffix[1]
-                meaning = f"{prefix[2]} {suffix[2]}"
-                # Skip if transliteration already used (some prefixes share)
-                if romaji in used_translit:
-                    continue
-                used_translit.add(romaji)
-                Shikona.objects.create(
-                    name=kanji,
-                    transliteration=romaji,
-                    interpretation=meaning,
-                )
-
-        # Now try to generate - should return empty list
-        options = ShikonaService.generate_shikona_options(count=3)
-        self.assertEqual(len(options), 0)
-
-
 class TestLimitedOptionsWarning(TestCase):
     """Tests for warning when options are limited."""
 
@@ -346,32 +430,19 @@ class TestLimitedOptionsWarning(TestCase):
         )
         self.client = Client()
 
-    def test_warning_shown_when_fewer_options_generated(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_warning_shown_when_fewer_options_generated(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that warning is shown when fewer than 3 options generated."""
-        from unittest.mock import patch
-
-        from game.services.shikona_service import ShikonaOption
-
-        self.client.force_login(self.user)
-
         # Mock the service to return only 2 options
-        mock_options = [
-            ShikonaOption(
-                name="大海", transliteration="Ōumi", interpretation="Great Sea"
-            ),
-            ShikonaOption(
-                name="若山",
-                transliteration="Wakayama",
-                interpretation="Young Mountain",
-            ),
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
         ]
 
-        with patch.object(
-            ShikonaService,
-            "generate_shikona_options",
-            return_value=mock_options,
-        ):
-            response = self.client.get(reverse("setup_heya_name"))
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("setup_heya_name"))
 
         self.assertEqual(response.status_code, 200)
         # Check that warning message is shown
@@ -391,11 +462,18 @@ class TestIntegrityErrorHandling(TestCase):
         )
         self.client = Client()
 
-    def test_integrity_error_handled_gracefully(self) -> None:
+    @patch("game.views.ShikonaService.generate_shikona_options")
+    def test_integrity_error_handled_gracefully(
+        self, mock_gen: MagicMock
+    ) -> None:
         """Test that IntegrityError from race condition is handled."""
-        from unittest.mock import patch
-
         from django.db import IntegrityError
+
+        mock_gen.return_value = [
+            ShikonaOption("大海", "Ōumi", "Great Sea"),
+            ShikonaOption("若山", "Wakayama", "Young Mountain"),
+            ShikonaOption("琴風", "Kotokaze", "Harp Wind"),
+        ]
 
         self.client.force_login(self.user)
 
