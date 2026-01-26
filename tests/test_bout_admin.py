@@ -58,7 +58,9 @@ class BoutAdminTestCase(TestCase):
             name="宮城野",
             interpretation="Miyagino",
         )
-        self.heya = Heya.objects.create(name=heya_name, created_at=self.start_date)
+        self.heya = Heya.objects.create(
+            name=heya_name, created_at=self.start_date
+        )
 
         # Create shusshin
         self.shusshin = Shusshin.objects.get(country_code="MN")

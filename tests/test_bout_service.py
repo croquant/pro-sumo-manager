@@ -4,7 +4,6 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
 from django.test import TestCase
 
 from game.models import (
@@ -56,7 +55,9 @@ class BoutServiceTestCase(TestCase):
             name="宮城野",
             interpretation="Miyagino",
         )
-        self.heya = Heya.objects.create(name=heya_name, created_at=self.start_date)
+        self.heya = Heya.objects.create(
+            name=heya_name, created_at=self.start_date
+        )
 
         # Create shusshin
         self.shusshin = Shusshin.objects.get(country_code="MN")
@@ -377,7 +378,7 @@ class TestRecordBoutValidation(BoutServiceTestCase):
             bout_result=bout_result,
         )
 
-        # Second bout with same wrestlers fails (ValidationError from full_clean)
+        # Second bout with same wrestlers fails (ValidationError from clean)
         with self.assertRaises(ValidationError) as ctx:
             BoutService.record_bout(
                 banzuke=self.banzuke,
@@ -495,9 +496,13 @@ class TestGetRikishiBouts(BoutServiceTestCase):
         )
 
         # Should find bout only in first tournament
-        bouts = BoutService.get_rikishi_bouts(self.east_rikishi, banzuke=self.banzuke)
+        bouts = BoutService.get_rikishi_bouts(
+            self.east_rikishi, banzuke=self.banzuke
+        )
         self.assertEqual(len(bouts), 1)
 
         # Should find no bouts in second tournament
-        bouts2 = BoutService.get_rikishi_bouts(self.east_rikishi, banzuke=banzuke2)
+        bouts2 = BoutService.get_rikishi_bouts(
+            self.east_rikishi, banzuke=banzuke2
+        )
         self.assertEqual(len(bouts2), 0)

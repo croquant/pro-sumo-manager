@@ -10,7 +10,6 @@ from django.db import models
 from django.db.models import Q
 
 if TYPE_CHECKING:
-    from game.models.banzuke import Banzuke
     from game.models.rikishi import Rikishi
 
 # Valid kimarite (winning techniques) - extracted from libs/types/bout.py
@@ -114,7 +113,7 @@ class Bout(models.Model):
         ]
         constraints = [
             # Each wrestler pair can only fight once per tournament
-            # Use a canonical ordering (smaller id first) to catch both directions
+            # Use canonical ordering (smaller id first) to catch both
             models.UniqueConstraint(
                 fields=["banzuke", "east_rikishi", "west_rikishi"],
                 name="unique_bout_per_tournament",

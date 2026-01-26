@@ -56,7 +56,9 @@ class BoutModelTestCase(TestCase):
             name="宮城野",
             interpretation="Miyagino",
         )
-        self.heya = Heya.objects.create(name=heya_name, created_at=self.start_date)
+        self.heya = Heya.objects.create(
+            name=heya_name, created_at=self.start_date
+        )
 
         # Create shusshin
         self.shusshin = Shusshin.objects.get(country_code="MN")
@@ -149,7 +151,9 @@ class TestBoutModel(BoutModelTestCase):
             commentary="A thrilling match!",
         )
 
-        expected = f"{self.banzuke} Day 1: {self.east_rikishi} vs {self.west_rikishi}"
+        expected = (
+            f"{self.banzuke} Day 1: {self.east_rikishi} vs {self.west_rikishi}"
+        )
         self.assertEqual(str(bout), expected)
 
     def test_winner_rikishi_property_east(self) -> None:

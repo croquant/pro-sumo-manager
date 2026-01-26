@@ -14,25 +14,25 @@ Create a new model with:
 ```python
 class Bout(models.Model):
     """Represents a single bout between two rikishi in a tournament."""
-    
+
     class Winner(models.TextChoices):
         EAST = "east", "East"
         WEST = "west", "West"
-    
+
     # Foreign keys
     banzuke = models.ForeignKey(Banzuke, on_delete=models.PROTECT, related_name="bouts")
     east_rikishi = models.ForeignKey(Rikishi, on_delete=models.PROTECT, related_name="bouts_as_east")
     west_rikishi = models.ForeignKey(Rikishi, on_delete=models.PROTECT, related_name="bouts_as_west")
-    
+
     # Bout metadata
     day = models.PositiveSmallIntegerField()  # 1-15
     winner = models.CharField(max_length=4, choices=Winner.choices)
     kimarite = models.CharField(max_length=32)  # Winning technique
-    
+
     # XP gains
     east_xp_gain = models.PositiveIntegerField()
     west_xp_gain = models.PositiveIntegerField()
-    
+
     # Match quality
     excitement_level = models.DecimalField(max_digits=3, decimal_places=1)  # 1.0-10.0
     commentary = models.TextField()  # JSON list or joined text
@@ -65,7 +65,7 @@ Run: `python manage.py makemigrations game`
 ```python
 class BoutService:
     """Service for recording bout results and updating related data."""
-    
+
     @staticmethod
     @transaction.atomic
     def record_bout(
@@ -77,13 +77,13 @@ class BoutService:
     ) -> Bout:
         """
         Record a bout result from BoutGenerator output.
-        
+
         1. Create Bout record
         2. Update BanzukeEntry win/loss counts (with select_for_update)
         3. Award XP to both wrestlers
         """
         pass
-    
+
     @staticmethod
     def get_head_to_head(rikishi1: Rikishi, rikishi2: Rikishi) -> dict:
         """Get head-to-head record between two rikishi (future use)."""
@@ -109,12 +109,12 @@ Add `BoutService` to imports
 @admin.register(Bout)
 class BoutAdmin(admin.ModelAdmin[Bout]):
     """Admin panel configuration for Bout model."""
-    
+
     list_display = (
         "banzuke",
         "day",
         "east_rikishi_name",
-        "west_rikishi_name", 
+        "west_rikishi_name",
         "winner_display",
         "kimarite",
         "excitement_level",
@@ -174,7 +174,7 @@ Test cases:
 Test cases:
 1. **Record bout** - Creates Bout and updates BanzukeEntry counts
 2. **Winner gets win** - Correct BanzukeEntry.wins incremented
-3. **Loser gets loss** - Correct BanzukeEntry.losses incremented  
+3. **Loser gets loss** - Correct BanzukeEntry.losses incremented
 4. **XP awarded** - Both rikishi receive XP
 5. **Atomic transaction** - Rollback on error
 6. **Missing BanzukeEntry** - Raises appropriate error
