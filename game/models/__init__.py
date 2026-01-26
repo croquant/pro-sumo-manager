@@ -1,6 +1,7 @@
 """Game models package."""
 
 from .banzuke import Banzuke, BanzukeEntry
+from .bout import Bout
 from .division import Division
 from .gamedate import GameDate
 from .heya import Heya
@@ -13,6 +14,7 @@ from .training import TrainingSession
 __all__ = [
     "Banzuke",
     "BanzukeEntry",
+    "Bout",
     "Division",
     "GameDate",
     "Heya",
