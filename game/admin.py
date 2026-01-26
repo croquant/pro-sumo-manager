@@ -6,6 +6,8 @@ from django.contrib import admin
 from django.http import HttpRequest
 
 from game.models import (
+    Banzuke,
+    BanzukeEntry,
     Division,
     GameDate,
     Rank,
@@ -182,3 +184,39 @@ class RikishiAdmin(admin.ModelAdmin[Rikishi]):
     def current_stats(self, obj: Rikishi) -> str:
         """Return current vs potential stats."""
         return f"{obj.current}/{obj.potential}"
+
+
+@admin.register(Banzuke)
+class BanzukeAdmin(admin.ModelAdmin[Banzuke]):
+    """Admin panel configuration for :class:`game.models.Banzuke`."""
+
+    list_display = ("name", "location", "year", "month", "status")
+    list_filter = ("status", "year")
+    search_fields = ("name", "location")
+    ordering = ("-year", "-month")
+
+
+@admin.register(BanzukeEntry)
+class BanzukeEntryAdmin(admin.ModelAdmin[BanzukeEntry]):
+    """Admin panel configuration for :class:`game.models.BanzukeEntry`."""
+
+    list_display = (
+        "banzuke",
+        "rikishi_name",
+        "rank",
+        "record_display",
+    )
+    list_filter = ("banzuke", "rank__division")
+    search_fields = ("rikishi__shikona__transliteration",)
+    ordering = ("banzuke", "rank")
+    list_select_related = ("banzuke", "rikishi__shikona", "rank__division")
+
+    @admin.display(description="Rikishi")
+    def rikishi_name(self, obj: BanzukeEntry) -> str:
+        """Return the wrestler's ring name."""
+        return obj.rikishi.shikona.transliteration
+
+    @admin.display(description="Record")
+    def record_display(self, obj: BanzukeEntry) -> str:
+        """Return the win-loss record."""
+        return obj.record
