@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -50,8 +50,13 @@ jobs:
 
             Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            IMPORTANT: Before posting your review comment, delete any previous review comments from this bot to avoid duplicate comments:
+            1. Use `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments` to list all comments
+            2. Find comments that contain the marker `<!-- claude-code-review -->` in their body
+            3. Delete those comments using `gh api -X DELETE repos/${{ github.repository }}/issues/comments/{comment_id}`
+
+            Then use `gh pr comment` to post your review. Start your comment with the HTML marker `<!-- claude-code-review -->` on its own line (this marker is invisible but allows finding the comment later).
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
