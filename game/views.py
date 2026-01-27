@@ -7,7 +7,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from game.decorators import heya_required, setup_in_progress
-from game.models import Heya, Shikona
+from game.models import Heya, Rikishi, Shikona, Shusshin
+from game.services.draft_pool_service import DraftCandidate, DraftPoolService
 from game.services.game_clock import GameClockService
 from game.services.shikona_service import ShikonaService
 
@@ -106,9 +107,7 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
             f"Welcome to {shikona.transliteration} stable!",
         )
 
-        # TODO(croquant): Redirect to draft pool when implemented
-        # https://github.com/croquant/pro-sumo-manager/issues/77
-        return redirect("dashboard")
+        return redirect("setup_draft_pool")
 
     except IntegrityError:
         # Race condition: name was taken between generation and creation
@@ -121,3 +120,158 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
     except (ValueError, KeyError, IndexError):
         messages.error(request, "Invalid selection. Please try again.")
         return redirect("setup_heya_name")
+
+
+def _user_needs_draft(user: object) -> bool:
+    """
+    Check if a user needs to complete the draft phase.
+
+    A user needs to draft if they have a heya but no rikishi yet.
+
+    Args:
+        user: The user object to check.
+
+    Returns:
+        True if the user needs to draft, False otherwise.
+
+    """
+    try:
+        heya = user.heya  # type: ignore[union-attr]
+        return heya is not None and not heya.rikishi.exists()
+    except AttributeError:
+        return False
+
+
+@login_required
+def setup_draft_pool(request: HttpRequest) -> HttpResponse:
+    """
+    Handle draft pool selection during onboarding.
+
+    GET: Display a pool of generated wrestlers for the user to choose from.
+    POST: Create the selected wrestler and assign to the user's heya.
+    """
+    # Check user has a heya
+    user = request.user
+    if not hasattr(user, "heya") or user.heya is None:  # type: ignore[union-attr]
+        return redirect("setup_heya_name")
+
+    # Check user hasn't already drafted
+    heya = user.heya  # type: ignore[union-attr]
+    if heya.rikishi.exists():
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        return _handle_draft_selection(request)
+
+    # Generate draft pool and store in session for consistency
+    if "draft_pool" not in request.session:
+        candidates = DraftPoolService.generate_draft_pool()
+        request.session["draft_pool"] = [c.to_dict() for c in candidates]
+
+    # Convert back to DraftCandidate objects for template
+    candidates = [
+        DraftCandidate.from_dict(c) for c in request.session["draft_pool"]
+    ]
+
+    return render(
+        request,
+        "game/setup/draft_pool.html",
+        {"candidates": candidates, "heya_name": heya.name},
+    )
+
+
+@transaction.atomic
+def _handle_draft_selection(request: HttpRequest) -> HttpResponse:
+    """Process the draft selection form submission."""
+    selected_index = request.POST.get("selected_wrestler")
+
+    if selected_index is None:
+        messages.error(request, "Please select a wrestler to draft.")
+        return redirect("setup_draft_pool")
+
+    try:
+        index = int(selected_index)
+        pool_data = request.session.get("draft_pool", [])
+
+        if not 0 <= index < len(pool_data):
+            messages.error(request, "Invalid selection. Please try again.")
+            return redirect("setup_draft_pool")
+
+        selected = DraftCandidate.from_dict(pool_data[index])
+        heya = request.user.heya  # type: ignore[union-attr]
+
+        # Create or get the Shikona
+        shikona, _ = Shikona.objects.get_or_create(
+            name=selected.shikona_name,
+            defaults={
+                "transliteration": selected.shikona_transliteration,
+                "interpretation": "",  # Interpretation not stored in candidate
+            },
+        )
+
+        # Get or create the Shusshin
+        shusshin = _get_shusshin_from_display(selected.shusshin_display)
+
+        # Create the Rikishi
+        Rikishi.objects.create(
+            shikona=shikona,
+            heya=heya,
+            shusshin=shusshin,
+            potential=selected._potential,
+            strength=selected.strength,
+            technique=selected.technique,
+            balance=selected.balance,
+            endurance=selected.endurance,
+            mental=selected.mental,
+        )
+
+        # Clear session data
+        request.session.pop("draft_pool", None)
+
+        messages.success(
+            request,
+            f"You have drafted {selected.shikona_transliteration}!",
+        )
+
+        return redirect("dashboard")
+
+    except IntegrityError:
+        request.session.pop("draft_pool", None)
+        messages.error(
+            request,
+            "This wrestler was just drafted. Please select another.",
+        )
+        return redirect("setup_draft_pool")
+    except (ValueError, KeyError, IndexError):
+        messages.error(request, "Invalid selection. Please try again.")
+        return redirect("setup_draft_pool")
+
+
+def _get_shusshin_from_display(display: str) -> Shusshin | None:
+    """
+    Look up a Shusshin from a display name.
+
+    Args:
+        display: The display name (prefecture or country name).
+
+    Returns:
+        The matching Shusshin object, or None if not found.
+
+    """
+    from game.enums.country_enum import Country
+    from game.enums.jp_prefecture_enum import JPPrefecture
+
+    # Try to find by prefecture name (Japanese wrestlers)
+    for pref in JPPrefecture:
+        if pref.label == display:
+            return Shusshin.objects.filter(
+                country_code="JP",
+                jp_prefecture=pref.value,
+            ).first()
+
+    # Try to find by country name (foreign wrestlers)
+    for country in Country:
+        if country.label == display:
+            return Shusshin.objects.filter(country_code=country.value).first()
+
+    return None

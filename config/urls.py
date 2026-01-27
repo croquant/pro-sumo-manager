@@ -9,12 +9,13 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-from game.views import dashboard, index, setup_heya_name
+from game.views import dashboard, index, setup_draft_pool, setup_heya_name
 
 urlpatterns = [
     path("", index, name="index"),
     path("dashboard/", dashboard, name="dashboard"),
     path("setup/heya-name/", setup_heya_name, name="setup_heya_name"),
+    path("setup/draft/", setup_draft_pool, name="setup_draft_pool"),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
 ]
