@@ -1,0 +1,156 @@
+{% extends "game/base.html" %}
+
+{% block title %}Draft Your First Wrestler - Pro Sumo Manager{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <div class="navbar bg-base-200">
+        <div class="flex-1">
+            <span class="text-xl font-bold px-4">Pro Sumo Manager</span>
+        </div>
+        <div class="flex-none px-4">
+            <span class="text-sm opacity-70">Drafting your first wrestler...</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex items-center justify-center p-6">
+        <div class="max-w-6xl w-full">
+            <!-- Title Section -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold mb-2">Draft Your First Wrestler</h1>
+                <p class="text-lg opacity-70">
+                    Choose a promising recruit to join your stable. Each wrestler has unique potential and abilities.
+                </p>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2">
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Selection Form -->
+            <form method="post" id="draft-pool-form">
+                {% csrf_token %}
+
+                <!-- Wrestler Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    {% for wrestler in pool %}
+                    <label class="cursor-pointer">
+                        <input type="radio"
+                               name="selected_wrestler"
+                               value="{{ forloop.counter0 }}"
+                               class="hidden peer"
+                               {% if forloop.first %}checked{% endif %}>
+                        <div class="card bg-base-200 shadow-xl h-full transition-all duration-200
+                                    border-2 border-transparent
+                                    peer-checked:border-primary peer-checked:bg-base-300
+                                    hover:border-primary/50 hover:shadow-2xl">
+                            <div class="card-body">
+                                <!-- Shikona -->
+                                <div class="text-center mb-2">
+                                    <h2 class="text-4xl font-bold text-primary">
+                                        {{ wrestler.shikona_name }}
+                                    </h2>
+                                    <p class="text-xl font-semibold">
+                                        {{ wrestler.shikona_transliteration }}
+                                    </p>
+                                    <p class="text-sm opacity-70 italic">
+                                        "{{ wrestler.shikona_interpretation }}"
+                                    </p>
+                                </div>
+
+                                <div class="divider my-1"></div>
+
+                                <!-- Shusshin and Potential -->
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-sm opacity-70">
+                                        {{ wrestler.shusshin_display }}
+                                    </span>
+                                    {% if wrestler.potential_tier == "Limited" or wrestler.potential_tier == "Average" %}
+                                    <span class="badge badge-ghost">{{ wrestler.potential_tier }}</span>
+                                    {% elif wrestler.potential_tier == "Promising" %}
+                                    <span class="badge badge-info">{{ wrestler.potential_tier }}</span>
+                                    {% elif wrestler.potential_tier == "Talented" %}
+                                    <span class="badge badge-primary">{{ wrestler.potential_tier }}</span>
+                                    {% elif wrestler.potential_tier == "Exceptional" %}
+                                    <span class="badge badge-secondary">{{ wrestler.potential_tier }}</span>
+                                    {% elif wrestler.potential_tier == "Generational" %}
+                                    <span class="badge badge-accent">{{ wrestler.potential_tier }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Stats -->
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs w-20 opacity-70">Strength</span>
+                                        <progress class="progress progress-primary flex-1"
+                                                  value="{{ wrestler.strength }}" max="20"></progress>
+                                        <span class="text-xs w-4 text-right">{{ wrestler.strength }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs w-20 opacity-70">Technique</span>
+                                        <progress class="progress progress-primary flex-1"
+                                                  value="{{ wrestler.technique }}" max="20"></progress>
+                                        <span class="text-xs w-4 text-right">{{ wrestler.technique }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs w-20 opacity-70">Balance</span>
+                                        <progress class="progress progress-primary flex-1"
+                                                  value="{{ wrestler.balance }}" max="20"></progress>
+                                        <span class="text-xs w-4 text-right">{{ wrestler.balance }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs w-20 opacity-70">Endurance</span>
+                                        <progress class="progress progress-primary flex-1"
+                                                  value="{{ wrestler.endurance }}" max="20"></progress>
+                                        <span class="text-xs w-4 text-right">{{ wrestler.endurance }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs w-20 opacity-70">Mental</span>
+                                        <progress class="progress progress-primary flex-1"
+                                                  value="{{ wrestler.mental }}" max="20"></progress>
+                                        <span class="text-xs w-4 text-right">{{ wrestler.mental }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Selection Indicator -->
+                                <div class="mt-4 text-center opacity-0 peer-checked:opacity-100 transition-opacity">
+                                    <span class="badge badge-primary badge-lg">Selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg btn-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M5 13l4 4L19 7" />
+                        </svg>
+                        Draft Wrestler
+                    </button>
+                </div>
+            </form>
+
+            <!-- Info -->
+            <div class="text-center mt-8">
+                <p class="text-sm opacity-50">
+                    Potential indicates how far a wrestler can develop. Higher potential means greater growth opportunity.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

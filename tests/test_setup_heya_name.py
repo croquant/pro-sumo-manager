@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from game.models import GameDate, Heya, Shikona
+from game.models import GameDate, Heya, Rikishi, Shikona
 from game.services.shikona_service import ShikonaOption, ShikonaService
 from libs.generators.shikona import ShikonaGenerationError
 from libs.types.shikona import Shikona as ShikonaType
@@ -250,9 +250,9 @@ class TestSetupHeyaNameView(TestCase):
         # Generator should only be called once
         mock_gen.assert_called_once()
 
-    def test_user_with_heya_redirected_to_dashboard(self) -> None:
-        """Test that users with heya are redirected away from setup."""
-        # Create heya for user
+    def test_user_with_heya_redirected_to_draft_pool(self) -> None:
+        """Test that users with heya but no rikishi go to draft pool."""
+        # Create heya for user (no rikishi yet)
         shikona = Shikona.objects.create(
             name="大海",
             transliteration="Ōumi",
@@ -268,7 +268,7 @@ class TestSetupHeyaNameView(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse("setup_heya_name"))
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("dashboard"))
+        self.assertEqual(response.url, reverse("setup_draft_pool"))
 
     @patch("game.views.ShikonaService.generate_shikona_options")
     def test_post_creates_heya(self, mock_gen: MagicMock) -> None:
@@ -568,19 +568,29 @@ class TestDashboardRedirect(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("setup_heya_name"))
 
-    def test_dashboard_accessible_with_heya(self) -> None:
-        """Test that users with heya can access dashboard."""
-        # Create heya for user
-        shikona = Shikona.objects.create(
+    def test_dashboard_accessible_with_heya_and_rikishi(self) -> None:
+        """Test that users with heya and rikishi can access dashboard."""
+        # Create heya and rikishi for user
+        heya_shikona = Shikona.objects.create(
             name="大海",
             transliteration="Ōumi",
             interpretation="Great Sea",
         )
+        rikishi_shikona = Shikona.objects.create(
+            name="若山",
+            transliteration="Wakayama",
+            interpretation="Young Mountain",
+        )
         game_date = GameDate.objects.create(year=1, month=1, day=1)
-        Heya.objects.create(
-            name=shikona,
+        heya = Heya.objects.create(
+            name=heya_shikona,
             created_at=game_date,
             owner=self.user,
+        )
+        Rikishi.objects.create(
+            shikona=rikishi_shikona,
+            heya=heya,
+            potential=45,
         )
 
         self.client.force_login(self.user)
