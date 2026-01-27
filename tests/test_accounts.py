@@ -101,21 +101,29 @@ class AuthViewTests(TestCase):
 
     def test_dashboard_accessible_when_logged_in(self) -> None:
         """Dashboard should be accessible to authenticated users with heya."""
-        from game.models import GameDate, Heya, Shikona
+        from game.models import GameDate, Heya, Rikishi, Shikona
 
         user = User.objects.create_user(
             email="test@example.com",
             username="testuser",
             password="testpass123",  # noqa: S106
         )
-        # Create heya for the user (required to access dashboard)
-        shikona = Shikona.objects.create(
+        # Create heya and rikishi for the user (required to access dashboard)
+        heya_shikona = Shikona.objects.create(
             name="大海",
             transliteration="Ōumi",
             interpretation="Great Sea",
         )
+        rikishi_shikona = Shikona.objects.create(
+            name="若山",
+            transliteration="Wakayama",
+            interpretation="Young Mountain",
+        )
         game_date = GameDate.objects.create(year=1, month=1, day=1)
-        Heya.objects.create(name=shikona, created_at=game_date, owner=user)
+        heya = Heya.objects.create(
+            name=heya_shikona, created_at=game_date, owner=user
+        )
+        Rikishi.objects.create(shikona=rikishi_shikona, heya=heya, potential=45)
 
         self.client.force_login(user)
         response = self.client.get(reverse("dashboard"))
@@ -281,21 +289,29 @@ class HtmxAuthRedirectMiddlewareTests(TestCase):
 
     def test_htmx_authenticated_request_no_redirect(self) -> None:
         """Authenticated HTMX requests should access dashboard normally."""
-        from game.models import GameDate, Heya, Shikona
+        from game.models import GameDate, Heya, Rikishi, Shikona
 
         user = User.objects.create_user(
             email="test@example.com",
             username="testuser",
             password="testpass123",  # noqa: S106
         )
-        # Create heya for the user (required to access dashboard)
-        shikona = Shikona.objects.create(
+        # Create heya and rikishi for the user (required to access dashboard)
+        heya_shikona = Shikona.objects.create(
             name="白龍",
             transliteration="Hakuryū",
             interpretation="White Dragon",
         )
+        rikishi_shikona = Shikona.objects.create(
+            name="朝日",
+            transliteration="Asahi",
+            interpretation="Morning Sun",
+        )
         game_date = GameDate.objects.create(year=1, month=1, day=1)
-        Heya.objects.create(name=shikona, created_at=game_date, owner=user)
+        heya = Heya.objects.create(
+            name=heya_shikona, created_at=game_date, owner=user
+        )
+        Rikishi.objects.create(shikona=rikishi_shikona, heya=heya, potential=45)
 
         self.client.force_login(user)
         response = self.client.get(

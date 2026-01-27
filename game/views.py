@@ -6,8 +6,9 @@ from django.db import IntegrityError, transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from game.decorators import heya_required, setup_in_progress
+from game.decorators import draft_pending, heya_required, setup_in_progress
 from game.models import Heya, Shikona
+from game.services.draft_pool_service import DraftPoolService
 from game.services.game_clock import GameClockService
 from game.services.shikona_service import ShikonaService
 
@@ -106,9 +107,7 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
             f"Welcome to {shikona.transliteration} stable!",
         )
 
-        # TODO(croquant): Redirect to draft pool when implemented
-        # https://github.com/croquant/pro-sumo-manager/issues/77
-        return redirect("dashboard")
+        return redirect("setup_draft_pool")
 
     except IntegrityError:
         # Race condition: name was taken between generation and creation
@@ -121,3 +120,82 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
     except (ValueError, KeyError, IndexError):
         messages.error(request, "Invalid selection. Please try again.")
         return redirect("setup_heya_name")
+
+
+@login_required
+@draft_pending
+def setup_draft_pool(request: HttpRequest) -> HttpResponse:
+    """
+    Handle initial wrestler draft during onboarding.
+
+    GET: Display 5-8 generated wrestler candidates for the user to draft.
+    POST: Create the selected wrestler and redirect to dashboard.
+    """
+    if request.method == "POST":
+        return _handle_draft_selection(request)
+
+    # Generate pool and store in session for consistency
+    if "draft_pool" not in request.session:
+        pool = DraftPoolService.generate_draft_pool(count=6)
+        if len(pool) < DraftPoolService.MIN_POOL_SIZE:
+            messages.warning(
+                request,
+                "Draft pool is limited. Please try again later.",
+            )
+        request.session["draft_pool"] = DraftPoolService.serialize_for_session(
+            pool
+        )
+
+    return render(
+        request,
+        "game/setup/draft_pool.html",
+        {"pool": request.session["draft_pool"]},
+    )
+
+
+@transaction.atomic
+def _handle_draft_selection(request: HttpRequest) -> HttpResponse:
+    """Process the draft pool selection form submission."""
+    selected_index = request.POST.get("selected_wrestler")
+
+    if selected_index is None:
+        messages.error(request, "Please select a wrestler to draft.")
+        return redirect("setup_draft_pool")
+
+    try:
+        idx = int(selected_index)
+        pool = request.session.get("draft_pool", [])
+
+        if not 0 <= idx < len(pool):
+            messages.error(request, "Invalid selection. Please try again.")
+            return redirect("setup_draft_pool")
+
+        selected = pool[idx]
+
+        # Create the rikishi (heya is guaranteed by @draft_pending decorator)
+        rikishi = DraftPoolService.create_rikishi_from_selection(
+            selected,
+            request.user.heya,  # type: ignore[union-attr]
+        )
+
+        # Clear session data and cycle session key for security
+        request.session.pop("draft_pool", None)
+        request.session.cycle_key()
+
+        messages.success(
+            request,
+            f"You drafted {rikishi.shikona.transliteration}!",
+        )
+
+        return redirect("dashboard")
+
+    except IntegrityError:
+        request.session.pop("draft_pool", None)
+        messages.error(
+            request,
+            "This wrestler was just drafted. Please select another.",
+        )
+        return redirect("setup_draft_pool")
+    except (ValueError, KeyError, IndexError):
+        messages.error(request, "Invalid selection. Please try again.")
+        return redirect("setup_draft_pool")
