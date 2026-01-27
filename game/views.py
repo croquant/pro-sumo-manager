@@ -137,7 +137,7 @@ def setup_draft_pool(request: HttpRequest) -> HttpResponse:
     # Generate pool and store in session for consistency
     if "draft_pool" not in request.session:
         pool = DraftPoolService.generate_draft_pool(count=6)
-        if len(pool) < 3:
+        if len(pool) < DraftPoolService.MIN_POOL_SIZE:
             messages.warning(
                 request,
                 "Draft pool is limited. Please try again later.",
@@ -178,8 +178,9 @@ def _handle_draft_selection(request: HttpRequest) -> HttpResponse:
             request.user.heya,  # type: ignore[union-attr]
         )
 
-        # Clear session data
+        # Clear session data and cycle session key for security
         request.session.pop("draft_pool", None)
+        request.session.cycle_key()
 
         messages.success(
             request,

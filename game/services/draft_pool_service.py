@@ -40,6 +40,11 @@ class DraftPoolService:
     that new players can choose from during initial setup.
     """
 
+    # Generation settings
+    MAX_ATTEMPTS_MULTIPLIER = 3
+    MIN_POOL_SIZE = 3
+
+    # Potential tier thresholds (upper bound, label)
     POTENTIAL_TIERS: list[tuple[int, str]] = [
         (20, "Limited"),
         (35, "Average"),
@@ -91,7 +96,7 @@ class DraftPoolService:
         # Get existing shikona names to avoid duplicates
         existing_names = set(Shikona.objects.values_list("name", flat=True))
 
-        max_attempts = count * 3
+        max_attempts = count * DraftPoolService.MAX_ATTEMPTS_MULTIPLIER
 
         for _ in range(max_attempts):
             if len(pool) >= count:
