@@ -117,7 +117,6 @@ class DraftPoolService:
                 pre_made = next(pool_shikona_iter, None)
                 shikona_arg: ShikonaType | None = None
                 if pre_made is not None:
-                    ShikonaService.consume_shikona(pre_made)
                     shikona_arg = ShikonaType(
                         shikona=pre_made.name,
                         transliteration=pre_made.transliteration,
@@ -131,6 +130,8 @@ class DraftPoolService:
                     and rikishi.shikona.shikona
                     not in {r.shikona_name for r in pool}
                 ):
+                    if pre_made is not None:
+                        ShikonaService.consume_shikona(pre_made)
                     pool.append(
                         DraftPoolRikishi(
                             shikona_name=rikishi.shikona.shikona,
