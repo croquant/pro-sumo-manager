@@ -151,9 +151,14 @@ class ShikonaService:
             The ShikonaModel instance (either existing or newly created).
 
         """
-        existing = ShikonaModel.objects.filter(
+        # When a user is provided, only consume shikona reserved
+        # by that user to prevent stealing another user's reservation.
+        pool_filter = ShikonaModel.objects.filter(
             name=option.name, is_available=True
-        ).first()
+        )
+        if user is not None:
+            pool_filter = pool_filter.filter(reserved_by=user)
+        existing = pool_filter.first()
 
         if existing is not None:
             ShikonaService.consume_shikona(existing)

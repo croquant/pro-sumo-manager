@@ -480,3 +480,43 @@ class CreateShikonaFromOptionPoolTests(TestCase):
         self.assertEqual(result.pk, s.pk)
         s.refresh_from_db()
         self.assertFalse(s.is_available)
+
+    def test_does_not_consume_other_users_reservation(self) -> None:
+        """
+        Should not consume shikona reserved by a different user.
+
+        When user A tries to select a name reserved by user B,
+        the pool lookup finds no match (filtered by reserved_by).
+        The fallback create hits IntegrityError (name exists),
+        which the view's error handler catches and redirects.
+        """
+        from django.db import (
+            IntegrityError as DjangoIntegrityError,
+        )
+        from django.db import transaction as db_transaction
+
+        from game.services.shikona_service import ShikonaOption
+
+        user_a = _create_user(username="user_a", email="a@example.com")
+        user_b = _create_user(username="user_b", email="b@example.com")
+        s = _create_pool_shikona(
+            name="龍虎",
+            transliteration="Ryuko",
+            reserved_at=timezone.now(),
+            reserved_by=user_b,
+        )
+
+        option = ShikonaOption(
+            name="龍虎",
+            transliteration="Ryuko",
+            interpretation="Test meaning",
+        )
+        with (
+            self.assertRaises(DjangoIntegrityError),
+            db_transaction.atomic(),
+        ):
+            ShikonaService.create_shikona_from_option(option, user=user_a)
+
+        # Original pool shikona untouched
+        s.refresh_from_db()
+        self.assertTrue(s.is_available)
