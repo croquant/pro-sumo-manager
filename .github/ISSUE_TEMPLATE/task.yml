@@ -1,0 +1,34 @@
+name: Task
+description: A technical implementation unit within a story
+labels: ["task"]
+body:
+  - type: input
+    id: parent-story
+    attributes:
+      label: Parent Story
+      description: "Link to the parent story (e.g., #45)"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Technical implementation details
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Files, services, or modules likely affected
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description: What must be true for this task to be complete?
+      value: |
+        - [ ]
+    validations:
+      required: true
