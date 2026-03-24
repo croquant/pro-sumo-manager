@@ -1,0 +1,27 @@
+name: Epic
+description: A large feature area grouping multiple stories
+labels: ["epic"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What system or feature area does this epic cover?
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: What does success look like for this epic?
+    validations:
+      required: true
+  - type: textarea
+    id: stories
+    attributes:
+      label: Stories
+      description: Checklist of child stories (link as they are created)
+      value: |
+        - [ ] #
+    validations:
+      required: false
