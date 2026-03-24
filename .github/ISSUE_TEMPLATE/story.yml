@@ -1,0 +1,34 @@
+name: Story
+description: A user-facing behavior or capability
+labels: ["story"]
+body:
+  - type: input
+    id: parent-epic
+    attributes:
+      label: Parent Epic
+      description: "Link to the parent epic (e.g., #42)"
+    validations:
+      required: true
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: "As a [role], I want to [action] so that [benefit]"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Checklist of conditions that must be true for this story to be complete
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: design-notes
+    attributes:
+      label: Design Notes
+      description: Optional UI/UX considerations, mockups, or references
+    validations:
+      required: false
