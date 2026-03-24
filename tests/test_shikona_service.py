@@ -363,6 +363,36 @@ class GenerateShikonaOptionsPoolTests(TestCase):
         shikona = Shikona.objects.get(name="龍虎")
         self.assertIsNone(shikona.reserved_by)
 
+    def test_partial_pool_falls_back_to_openai(self) -> None:
+        """Should use pool + OpenAI when pool has fewer than requested."""
+        from unittest.mock import MagicMock, patch
+
+        from libs.types.shikona import Shikona as ShikonaType
+
+        user = _create_user()
+        _create_pool_shikona(name="龍虎", transliteration="Ryuko")
+
+        mock_shikona = ShikonaType(
+            shikona="霧島",
+            transliteration="Kirishima",
+            interpretation="Fog island",
+        )
+        with patch(
+            "game.services.shikona_service.ShikonaGenerator"
+        ) as mock_gen_cls:
+            instance = MagicMock()
+            instance.generate_single.return_value = mock_shikona
+            mock_gen_cls.return_value = instance
+
+            options = ShikonaService.generate_shikona_options(
+                count=2, user=user
+            )
+
+        self.assertEqual(len(options), 2)
+        names = {opt.name for opt in options}
+        self.assertIn("龍虎", names)
+        self.assertIn("霧島", names)
+
     def test_releases_expired_before_fetching(self) -> None:
         """Expired reservation by user1 is released so user2 can get it."""
         user1 = _create_user(username="user1", email="user1@example.com")

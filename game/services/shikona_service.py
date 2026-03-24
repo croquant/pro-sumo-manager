@@ -62,64 +62,64 @@ class ShikonaService:
         if user is not None:
             ShikonaService.release_reservation(user)
 
-        pool_shikona = ShikonaService.get_available_shikona(count)
+        options: list[ShikonaOption] = []
 
+        # Try pool first
+        pool_shikona = ShikonaService.get_available_shikona(count)
         if pool_shikona:
             if user is not None:
-                ShikonaService.reserve_shikona(
+                pool_shikona = ShikonaService.reserve_shikona(
                     [s.pk for s in pool_shikona], user
                 )
-            return [
+            options.extend(
                 ShikonaOption(
                     name=s.name,
                     transliteration=s.transliteration,
                     interpretation=s.interpretation,
                 )
                 for s in pool_shikona
-            ]
+            )
 
-        # Fall back to OpenAI generation
-        options: list[ShikonaOption] = []
+        # Fall back to OpenAI for remaining slots
+        if len(options) < count:
+            existing_names = set(
+                ShikonaModel.objects.values_list("name", flat=True)
+            )
+            existing_translit = set(
+                ShikonaModel.objects.values_list("transliteration", flat=True)
+            )
 
-        # Get existing shikona names to avoid duplicates
-        existing_names = set(
-            ShikonaModel.objects.values_list("name", flat=True)
-        )
-        existing_translit = set(
-            ShikonaModel.objects.values_list("transliteration", flat=True)
-        )
+            generator = ShikonaGenerator()
+            remaining = count - len(options)
+            max_attempts = remaining * 3
 
-        generator = ShikonaGenerator()
-        max_attempts = count * 3  # Allow some retries for duplicates
+            for _ in range(max_attempts):
+                if len(options) >= count:
+                    break
 
-        for _ in range(max_attempts):
-            if len(options) >= count:
-                break
+                try:
+                    shikona = generator.generate_single()
 
-            try:
-                shikona = generator.generate_single()
-
-                # Check uniqueness
-                if (
-                    shikona.shikona not in existing_names
-                    and shikona.transliteration not in existing_translit
-                    and shikona.shikona not in {opt.name for opt in options}
-                ):
-                    options.append(
-                        ShikonaOption(
-                            name=shikona.shikona,
-                            transliteration=shikona.transliteration,
-                            interpretation=shikona.interpretation,
+                    if (
+                        shikona.shikona not in existing_names
+                        and shikona.transliteration not in existing_translit
+                        and shikona.shikona not in {opt.name for opt in options}
+                    ):
+                        options.append(
+                            ShikonaOption(
+                                name=shikona.shikona,
+                                transliteration=shikona.transliteration,
+                                interpretation=shikona.interpretation,
+                            )
                         )
-                    )
-                    logger.info(
-                        "Generated shikona option: %s (%s)",
-                        shikona.shikona,
-                        shikona.transliteration,
-                    )
-            except ShikonaGenerationError as e:
-                logger.warning("Failed to generate shikona: %s", e)
-                continue
+                        logger.info(
+                            "Generated shikona option: %s (%s)",
+                            shikona.shikona,
+                            shikona.transliteration,
+                        )
+                except ShikonaGenerationError as e:
+                    logger.warning("Failed to generate shikona: %s", e)
+                    continue
 
         if len(options) < count:
             logger.warning(
