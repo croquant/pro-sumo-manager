@@ -35,18 +35,20 @@ reserved_by = models.ForeignKey(
 
 **States:**
 
-| `is_available` | `reserved_at` | Meaning |
-|---|---|---|
-| `True` | `NULL` | In pool, ready to use |
-| `True` | set (< 5 min old) | Reserved for a user's heya selection |
-| `True` | set (>= 5 min old) | Expired reservation, treated as available |
-| `False` | any | Consumed (assigned to heya or rikishi) |
+| `is_available` | `reserved_at` | Meaning | Returned by `get_available_shikona`? |
+|---|---|---|---|
+| `True` | `NULL` | In pool, ready to use | Yes |
+| `True` | set (< 5 min old) | Reserved for a user's heya selection | No |
+| `True` | set (>= 5 min old) | Expired reservation, treated as available | Yes |
+| `False` | any | Consumed (assigned to heya or rikishi) | No |
+
+`is_available` tracks permanent consumption. Reservation is a separate, transient concern filtered by `reserved_at`.
 
 Migration defaults `is_available=False` for existing rows since they are already assigned.
 
 ### ShikonaService — New Pool Methods
 
-Added to the existing `ShikonaService`:
+Added to the existing `ShikonaService` (all as `@staticmethod`, matching the existing pattern):
 
 ```python
 def get_available_shikona(self, count: int = 1) -> list[Shikona]:
@@ -100,7 +102,7 @@ Reservation expiry is checked lazily (when fetching options), not via a backgrou
 python manage.py generate_shikona_pool --count 600
 ```
 
-- Uses `ShikonaGenerator.generate_batch()` to create shikona via OpenAI.
+- Calls `ShikonaGenerator.generate_single()` in a loop (not `generate_batch()`, which raises on any single failure). Catches individual failures to allow partial success.
 - Saves each with `is_available=True`.
 - Skips duplicates by checking existing `name` values.
 - Shows progress counter (e.g., `Generated 42/600...`).
