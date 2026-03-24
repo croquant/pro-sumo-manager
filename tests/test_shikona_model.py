@@ -3,6 +3,7 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
+from accounts.models import User
 from game.models import Shikona
 
 
@@ -152,3 +153,52 @@ class ShikonaModelTests(TestCase):
         self.assertEqual(child.parent, parent)
         self.assertEqual(parent.parent, grandparent)
         self.assertIsNone(grandparent.parent)
+
+
+class ShikonaPoolFieldTests(TestCase):
+    """Tests for pool management fields on the Shikona model."""
+
+    def test_is_available_defaults_to_true(self) -> None:
+        """New shikona should default to available in the pool."""
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        self.assertTrue(shikona.is_available)
+
+    def test_reserved_at_defaults_to_none(self) -> None:
+        """New shikona should have no reservation timestamp by default."""
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        self.assertIsNone(shikona.reserved_at)
+
+    def test_reserved_by_defaults_to_none(self) -> None:
+        """New shikona should have no reserving user by default."""
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+        )
+        self.assertIsNone(shikona.reserved_by)
+
+    def test_deleting_reserved_by_user_sets_field_to_none(self) -> None:
+        """Deleting the reserving user should set reserved_by to null."""
+        user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="password",  # noqa: S106
+        )
+        shikona = Shikona.objects.create(
+            name="鶴龍",
+            transliteration="Tsururyu",
+            interpretation="Crane Dragon",
+            reserved_by=user,
+        )
+        user.delete()
+
+        shikona.refresh_from_db()
+        self.assertIsNone(shikona.reserved_by)
