@@ -556,6 +556,25 @@ class TestRikishiGenerator(unittest.TestCase):
                 self.assertEqual(rikishi.shusshin.jp_prefecture, "")
                 break
 
+    def test_uses_provided_shikona(
+        self, mock_openai: MagicMock, mock_singleton: MagicMock
+    ) -> None:
+        """When shikona is provided, it is used and generator not called."""
+        self._setup_mock_openai(mock_openai)
+        gen = RikishiGenerator(seed=42)
+
+        pre_made = Shikona(
+            shikona="龍天",
+            transliteration="Ryuten",
+            interpretation="Dragon Heaven",
+        )
+
+        rikishi = gen.get(shikona=pre_made)
+
+        self.assertEqual(rikishi.shikona, pre_made)
+        # The _call_openai mock should NOT have been called for shikona gen
+        mock_openai.assert_not_called()
+
 
 class TestDistributeStatsEdgeCases(unittest.TestCase):
     """Tests for the _distribute_stats method edge cases."""

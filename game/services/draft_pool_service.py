@@ -8,7 +8,9 @@ from typing import Any
 
 from game.models import Heya, Rikishi, Shikona
 from game.models import Shusshin as ShusshinModel
+from game.services.shikona_service import ShikonaService
 from libs.generators.rikishi import RikishiGenerator
+from libs.types.shikona import Shikona as ShikonaType
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +95,17 @@ class DraftPoolService:
         pool: list[DraftPoolRikishi] = []
         generator = RikishiGenerator()
 
-        # Get existing shikona names to avoid duplicates
-        existing_names = set(Shikona.objects.values_list("name", flat=True))
+        # Get existing (consumed/assigned) shikona names to avoid duplicates.
+        # Available pool shikona are excluded — they will be consumed on use.
+        existing_names = set(
+            Shikona.objects.filter(is_available=False).values_list(
+                "name", flat=True
+            )
+        )
+
+        # Pre-fetch pool shikona for this generation run
+        pool_shikona = ShikonaService.get_available_shikona(count)
+        pool_shikona_iter = iter(pool_shikona)
 
         max_attempts = count * DraftPoolService.MAX_ATTEMPTS_MULTIPLIER
 
@@ -103,7 +114,16 @@ class DraftPoolService:
                 break
 
             try:
-                rikishi = generator.get()
+                pre_made = next(pool_shikona_iter, None)
+                shikona_arg: ShikonaType | None = None
+                if pre_made is not None:
+                    ShikonaService.consume_shikona(pre_made)
+                    shikona_arg = ShikonaType(
+                        shikona=pre_made.name,
+                        transliteration=pre_made.transliteration,
+                        interpretation=pre_made.interpretation,
+                    )
+                rikishi = generator.get(shikona=shikona_arg)
 
                 # Check uniqueness against DB and current pool
                 if (

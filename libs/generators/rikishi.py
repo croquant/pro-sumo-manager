@@ -14,6 +14,7 @@ from libs.constants import (
 from libs.generators.shikona import ShikonaGenerator
 from libs.generators.shusshin import ShusshinGenerator
 from libs.types.rikishi import Rikishi, StatName
+from libs.types.shikona import Shikona
 
 
 class RikishiGenerator:
@@ -147,16 +148,23 @@ class RikishiGenerator:
         # Use model_copy to create a new validated instance
         return rikishi.model_copy(update=stats)
 
-    def get(self) -> Rikishi:
+    def get(self, shikona: Shikona | None = None) -> Rikishi:
         """
         Generate a complete rikishi with all attributes.
+
+        Args:
+            shikona: Optional pre-made shikona to use. If None, one will be
+                generated via the shikona generator.
 
         Returns:
             Rikishi with shikona, shusshin, abilities, and stats.
 
         """
         shusshin = self.shusshin_generator.get()
-        shikona = self.shikona_generator.generate_single(shusshin=str(shusshin))
+        if shikona is None:
+            shikona = self.shikona_generator.generate_single(
+                shusshin=str(shusshin)
+            )
         potential = self._get_potential_ability()
         current = self._get_current_ability(potential)
         rikishi = Rikishi(
