@@ -36,16 +36,20 @@ class ShikonaService:
     """
 
     @staticmethod
-    def generate_shikona_options(count: int = 3) -> list[ShikonaOption]:
+    def generate_shikona_options(
+        count: int = 3, user: User | None = None
+    ) -> list[ShikonaOption]:
         """
         Generate unique shikona options for heya name selection.
 
-        Uses the existing ShikonaGenerator which leverages OpenAI for
-        authentic romanization and meaningful interpretations.
+        First attempts to serve options from the pre-generated pool with
+        user reservations. Falls back to OpenAI generation if the pool
+        is empty or insufficient.
 
         Args:
         ----
             count: Number of unique options to generate (default: 3).
+            user: Optional user for whom to reserve pool shikona.
 
         Returns:
         -------
@@ -53,6 +57,28 @@ class ShikonaService:
             May return fewer than requested if generation fails.
 
         """
+        ShikonaService.release_expired_reservations()
+
+        if user is not None:
+            ShikonaService.release_reservation(user)
+
+        pool_shikona = ShikonaService.get_available_shikona(count)
+
+        if pool_shikona:
+            if user is not None:
+                ShikonaService.reserve_shikona(
+                    [s.pk for s in pool_shikona], user
+                )
+            return [
+                ShikonaOption(
+                    name=s.name,
+                    transliteration=s.transliteration,
+                    interpretation=s.interpretation,
+                )
+                for s in pool_shikona
+            ]
+
+        # Fall back to OpenAI generation
         options: list[ShikonaOption] = []
 
         # Get existing shikona names to avoid duplicates
@@ -105,24 +131,45 @@ class ShikonaService:
         return options
 
     @staticmethod
-    def create_shikona_from_option(option: ShikonaOption) -> ShikonaModel:
+    def create_shikona_from_option(
+        option: ShikonaOption, user: User | None = None
+    ) -> ShikonaModel:
         """
-        Create a Shikona model instance from a ShikonaOption.
+        Create or consume a Shikona model instance from a ShikonaOption.
+
+        If a matching available shikona exists in the pool, it is consumed
+        (marked unavailable) and any remaining reservations for the user
+        are released. Otherwise, a new shikona is created directly.
 
         Args:
         ----
             option: The ShikonaOption to persist.
+            user: Optional user whose other reservations should be released.
 
         Returns:
         -------
-            The newly created Shikona instance.
+            The ShikonaModel instance (either existing or newly created).
 
         """
-        return ShikonaModel.objects.create(
+        existing = ShikonaModel.objects.filter(
+            name=option.name, is_available=True
+        ).first()
+
+        if existing is not None:
+            ShikonaService.consume_shikona(existing)
+            if user is not None:
+                ShikonaService.release_reservation(user)
+            return existing
+
+        shikona = ShikonaModel.objects.create(
             name=option.name,
             transliteration=option.transliteration,
             interpretation=option.interpretation,
+            is_available=False,
         )
+        if user is not None:
+            ShikonaService.release_reservation(user)
+        return shikona
 
     @staticmethod
     def release_expired_reservations() -> int:

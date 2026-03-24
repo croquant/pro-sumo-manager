@@ -1,16 +1,19 @@
 """Views for the game app."""
 
+from typing import cast
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from accounts.models import User
 from game.decorators import draft_pending, heya_required, setup_in_progress
-from game.models import Heya, Shikona
+from game.models import Heya
 from game.services.draft_pool_service import DraftPoolService
 from game.services.game_clock import GameClockService
-from game.services.shikona_service import ShikonaService
+from game.services.shikona_service import ShikonaOption, ShikonaService
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -39,7 +42,9 @@ def setup_heya_name(request: HttpRequest) -> HttpResponse:
 
     # Generate options and store in session for consistency
     if "heya_options" not in request.session:
-        options = ShikonaService.generate_shikona_options(count=3)
+        options = ShikonaService.generate_shikona_options(
+            count=3, user=cast(User, request.user)
+        )
         if len(options) < 3:
             messages.warning(
                 request,
@@ -80,13 +85,14 @@ def _handle_heya_name_selection(request: HttpRequest) -> HttpResponse:
 
         selected = options[index]
 
-        # Create or get the Shikona (handles race condition)
-        shikona, _ = Shikona.objects.get_or_create(
-            name=selected["name"],
-            defaults={
-                "transliteration": selected["transliteration"],
-                "interpretation": selected["interpretation"],
-            },
+        # Create or consume the Shikona from pool
+        shikona = ShikonaService.create_shikona_from_option(
+            ShikonaOption(
+                name=selected["name"],
+                transliteration=selected["transliteration"],
+                interpretation=selected["interpretation"],
+            ),
+            user=cast(User, request.user),
         )
 
         # Initialize game clock (handles "already exists" gracefully)
