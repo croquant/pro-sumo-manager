@@ -79,19 +79,6 @@ body:
       description: "As a [role], I want to [action] so that [benefit]"
     validations:
       required: true
-  - type: dropdown
-    id: story-points
-    attributes:
-      label: Story Points
-      description: Fibonacci scale. Anything above 8 should be split.
-      options:
-        - "1"
-        - "2"
-        - "3"
-        - "5"
-        - "8"
-    validations:
-      required: true
   - type: textarea
     id: acceptance-criteria
     attributes:
@@ -156,6 +143,13 @@ name: Bug
 description: A defect or unexpected behavior
 labels: ["bug"]
 body:
+  - type: input
+    id: related-issue
+    attributes:
+      label: Related Issue
+      description: "Link to related story or epic, if any (e.g., #45)"
+    validations:
+      required: false
   - type: textarea
     id: steps-to-reproduce
     attributes:
@@ -211,7 +205,7 @@ body:
 | Priority | `P0-critical` | `#B60205` | Must fix immediately |
 | Priority | `P1-high` | `#D93F0B` | Important, address this milestone |
 | Priority | `P2-medium` | `#FBCA04` | Normal priority |
-| Priority | `P3-low` | `#0E8A16` | Nice to have |
+| Priority | `P3-low` | `#C5DEF5` | Nice to have |
 | Area | `frontend` | `#BFD4F2` | Templates, HTMX, CSS |
 | Area | `backend` | `#D4C5F9` | Models, views, APIs |
 | Area | `gameplay` | `#F9D0C4` | Game logic, services |
@@ -235,12 +229,47 @@ A single GitHub Project (v2) named "Pro Sumo Manager" with columns:
 | In Review | PR open, awaiting review |
 | Done | Merged and verified |
 
+## Template Configuration
+
+A `.github/ISSUE_TEMPLATE/config.yml` disables blank issues to enforce template usage:
+
+```yaml
+blank_issues_enabled: false
+```
+
 ## Conventions
 
+### Hierarchy and Lifecycle
+
 - Epics stay open until all child stories are complete
-- Stories must have acceptance criteria and story points before moving to "Ready"
+- Epics are tracking issues — they do not move through board columns
+- Stories must have acceptance criteria and an `SP:*` label before moving to "Ready"
 - Tasks are optional — only create them when a story needs further decomposition
-- Bugs get triaged with severity + priority before entering the board
-- Each PR references its story/task number in the branch name and PR description
-- Story points use Fibonacci scale (1, 2, 3, 5, 8) — anything above 8 must be split into smaller stories
+- Tasks are "Ready" when they have a definition of done and their parent story is in Ready or In Progress
+
+### Story Points
+
+- Only stories receive story points, applied via `SP:*` labels (not tracked elsewhere)
+- Fibonacci scale (1, 2, 3, 5, 8) — anything above 8 must be split into smaller stories
+- Tasks and bugs are not pointed
+
+### Priority
+
+- All stories and tasks should have a priority label (`P0` through `P3`)
+- Bugs must have both a severity (in the template) and a priority label before entering the board
+
+### Bugs
+
+- Bugs are assigned to the milestone in which they will be fixed
+- Bugs are "Ready" when triaged with severity and priority labels
+- Use the optional "Related Issue" field to link bugs to their parent story or epic
+
+### PRs and Branches
+
+- Branch names follow the pattern: `<issue-number>-short-description` (e.g., `42-add-wrestler-draft-ui`)
+- PRs use `Closes #N` or `Fixes #N` to auto-close issues on merge
+- Each PR references its story/task number in the description
+
+### Scope
+
 - Only create detailed issues for the current milestone; future milestones stay high-level until they become active
