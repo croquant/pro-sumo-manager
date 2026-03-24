@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from django.core.management.base import BaseCommand, CommandParser
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import IntegrityError
 
 from game.models import Shikona
@@ -37,6 +37,11 @@ class Command(BaseCommand):
         """Execute the command."""
         count: int = options["count"]  # type: ignore[assignment]
         batch_size: int = options["batch_size"]  # type: ignore[assignment]
+
+        if count <= 0:
+            raise CommandError("--count must be a positive integer.")
+        if batch_size <= 0:
+            raise CommandError("--batch-size must be a positive integer.")
 
         generator = ShikonaGenerator()
         existing_names = set(Shikona.objects.values_list("name", flat=True))

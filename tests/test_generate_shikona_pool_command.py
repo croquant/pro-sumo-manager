@@ -91,7 +91,9 @@ class GenerateShikonaPoolCommandTests(TestCase):
             )
 
         self.assertEqual(Shikona.objects.count(), 2)
-        self.assertTrue(Shikona.objects.filter(name="白鵬").exists())
+        self.assertTrue(
+            Shikona.objects.filter(name="白鵬", is_available=True).exists()
+        )
 
     def test_handles_generation_failure(self) -> None:
         """Command should continue after ShikonaGenerationError and succeed."""
@@ -154,6 +156,29 @@ class GenerateShikonaPoolCommandTests(TestCase):
                 )
 
         self.assertEqual(mock_create.call_count, 2)
+
+    def test_rejects_non_positive_count(self) -> None:
+        """Command should raise CommandError when --count is not positive."""
+        from django.core.management.base import CommandError
+
+        with self.assertRaises(CommandError):
+            call_command(
+                "generate_shikona_pool", "--count", "0", stdout=StringIO()
+            )
+
+    def test_rejects_non_positive_batch_size(self) -> None:
+        """Command should raise CommandError for non-positive --batch-size."""
+        from django.core.management.base import CommandError
+
+        with self.assertRaises(CommandError):
+            call_command(
+                "generate_shikona_pool",
+                "--count",
+                "1",
+                "--batch-size",
+                "0",
+                stdout=StringIO(),
+            )
 
     def test_stops_after_max_attempts(self) -> None:
         """Command should stop when max_attempts is exhausted."""
