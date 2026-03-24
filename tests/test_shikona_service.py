@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
@@ -29,7 +29,7 @@ def _create_pool_shikona(
     transliteration: str,
     interpretation: str = "Test meaning",
     is_available: bool = True,
-    reserved_at: object = None,
+    reserved_at: datetime | None = None,
     reserved_by: User | None = None,
 ) -> Shikona:
     """Create a Shikona for pool testing."""

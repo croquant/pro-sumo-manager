@@ -142,6 +142,7 @@ class ShikonaService:
         )
         updated = ShikonaModel.objects.filter(
             is_available=True,
+            reserved_at__isnull=False,
             reserved_at__lt=cutoff,
         ).update(reserved_at=None, reserved_by=None)
         return updated
