@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import models
 from django.db.models import CheckConstraint, F, Q
 
@@ -25,6 +26,24 @@ class Shikona(models.Model):
             "oyakata (stable master), their former ring name may be inherited "
             "by a successor. This field tracks such historical relationships."
         ),
+    )
+    is_available = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Whether this shikona is available in the pool.",
+    )
+    reserved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this shikona was reserved for selection.",
+    )
+    reserved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reserved_shikona",
+        help_text="User who reserved this shikona.",
     )
 
     class Meta:

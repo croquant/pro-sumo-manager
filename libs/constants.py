@@ -16,3 +16,6 @@ MAX_POTENTIAL: Final[int] = 100
 MIN_STAT_VALUE: Final[int] = 1
 MAX_STAT_VALUE: Final[int] = 20
 NUM_STATS: Final[int] = 5  # strength, technique, balance, endurance, mental
+
+# Shikona pool constants
+SHIKONA_RESERVATION_TTL_MINUTES: Final[int] = 5
