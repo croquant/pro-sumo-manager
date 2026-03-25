@@ -16,3 +16,6 @@ MAX_POTENTIAL: Final[int] = 100
 MIN_STAT_VALUE: Final[int] = 1
 MAX_STAT_VALUE: Final[int] = 20
 NUM_STATS: Final[int] = 5  # strength, technique, balance, endurance, mental
+
+# Draft pool constants
+DRAFT_POOL_RESERVATION_EXPIRY_MINUTES: Final[int] = 15
