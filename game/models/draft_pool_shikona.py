@@ -26,6 +26,7 @@ class DraftPoolShikona(models.Model):
         max_length=10,
         choices=DraftPoolStatus.choices,
         default=DraftPoolStatus.AVAILABLE,
+        db_index=True,
         help_text="Current availability status",
     )
     reserved_by = models.ForeignKey(

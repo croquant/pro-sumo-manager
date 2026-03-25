@@ -77,6 +77,7 @@ class DraftPoolWrestler(models.Model):
         max_length=10,
         choices=DraftPoolStatus.choices,
         default=DraftPoolStatus.AVAILABLE,
+        db_index=True,
         help_text="Current availability status",
     )
     reserved_by = models.ForeignKey(
@@ -189,6 +190,10 @@ class DraftPoolWrestler(models.Model):
                 condition=(
                     (Q(country_code=Country.JP) & ~Q(jp_prefecture=""))
                     | (~Q(country_code=Country.JP) & Q(jp_prefecture=""))
+                ),
+                violation_error_message=(
+                    "Japanese wrestlers require a prefecture;"
+                    " non-Japanese wrestlers must not have one."
                 ),
             ),
         ]
