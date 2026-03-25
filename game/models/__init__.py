@@ -3,6 +3,7 @@
 from .banzuke import Banzuke, BanzukeEntry
 from .bout import Bout
 from .division import Division
+from .draft_pool_shikona import DraftPoolShikona
 from .gamedate import GameDate
 from .heya import Heya
 from .rank import Rank
@@ -16,6 +17,7 @@ __all__ = [
     "BanzukeEntry",
     "Bout",
     "Division",
+    "DraftPoolShikona",
     "GameDate",
     "Heya",
     "Rank",
